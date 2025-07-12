@@ -196,7 +196,7 @@ button.active {
     color: #a0ffff;
 }
 
-#sequenceInput {
+#sequenceInput, #chordNotes { /* Añadido #chordNotes aquí */
     width: 90%;
     padding: 10px;
     border: 2px solid #00ffff;
@@ -209,11 +209,11 @@ button.active {
     box-shadow: 0 0 5px rgba(0, 255, 255, 0.4);
 }
 
-#sequenceInput::placeholder {
+#sequenceInput::placeholder, #chordNotes::placeholder { /* Añadido #chordNotes aquí */
     color: #808080;
 }
 
-#sequenceInput:focus {
+#sequenceInput:focus, #chordNotes:focus { /* Añadido #chordNotes aquí */
     border-color: #00dddd;
     box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
 }
@@ -529,3 +529,68 @@ input[type="range"]::-moz-range-thumb {
     border-color: #00e0b3;
     box-shadow: 0 0 8px rgba(0, 255, 200, 0.6);
 }
+
+
+/* --- Estilos para la Nueva Sección 32-bit --- */
+.thirty-two-bit-section {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    background-color: #4a2e4a; /* Nuevo color de fondo */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: inset 0 0 10px rgba(255, 0, 150, 0.2); /* Sombra rosada/morada */
+}
+
+.thirty-two-bit-section h2 {
+    color: #ff0088; /* Color vibrante para el título */
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    text-shadow: 0 0 5px #ff0088;
+}
+
+.thirty-two-bit-section .control-group {
+    width: 100%;
+}
+
+#waveType {
+    width: 90%;
+    padding: 10px;
+    border: 2px solid #ff0088;
+    border-radius: 5px;
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+    font-family: 'Press Start 2P', cursive, monospace;
+    font-size: 1em;
+    outline: none;
+    box-shadow: 0 0 5px rgba(255, 0, 150, 0.4);
+    appearance: none; /* Elimina estilos por defecto de select */
+    -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%204%205%22%3E%3Cpath%20fill%3D%22%23e0e0e0%22%20d%3D%22M2%200L0%202h4L2%200zM2%205L0%203h4L2%205z%22%2F%3E%3C%2Fsvg%3E'); /* Flecha personalizada */
+    background-repeat: no-repeat;
+    background-position: right 0.7em top 50%;
+    background-size: 0.65em auto;
+}
+
+#waveType:focus {
+    border-color: #dd0077;
+    box-shadow: 0 0 8px rgba(255, 0, 150, 0.6);
+}
+
+#play32BitButton, #stop32BitButton {
+    background-color: #8A2BE2; /* Similar a la melodía */
+    color: white;
+    box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
+}
+#play32BitButton:hover { background-color: #7a1ee0; }
+#play32BitButton:active { background-color: #6a10c0; }
+
+#stop32BitButton {
+    background-color: #ff4d4d; /* Rojo para detener */
+    color: #ffffff;
+    box-shadow: 0 5px 15px rgba(255, 77, 77, 0.4);
+}
+#stop32BitButton:hover { background-color: #cc3333; }
+#stop32BitButton:active { background-color: #aa2222; }
