@@ -1,16 +1,206 @@
-/* ... (todo tu CSS existente) ... */
+body {
+    /* Fondo oscuro y color de texto general para el tema arcade */
+    font-family: 'Press Start 2P', cursive, monospace; /* Fuente estilo arcade, o monospace si no carga */
+    background-color: #1a1a2e; /* Azul/morado oscuro */
+    color: #e0e0e0; /* Gris claro */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh; /* Ocupa al menos toda la altura de la ventana */
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box; /* Incluye padding y border en el tamaño total */
+    /* Para usar la fuente 'Press Start 2P', debes añadir esta línea en el <head> de tu index.html:
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    */
+}
 
-/* NUEVOS ESTILOS PARA LA SECCIÓN DE SECUENCIA */
+.container {
+    background-color: #2a2a4a; /* Un azul/morado ligeramente más claro para el contenedor principal */
+    border: 3px solid #0f0f1f; /* Borde oscuro */
+    border-radius: 10px;
+    padding: 30px;
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.4); /* Sombra brillante cian */
+    text-align: center;
+    max-width: 600px; /* Ancho máximo del contenedor */
+    width: 100%; /* Asegura que ocupe el ancho disponible */
+}
+
+h1 {
+    color: #00ffff; /* Cian brillante para el título */
+    margin-bottom: 15px;
+    font-size: 2em;
+    text-shadow: 0 0 5px #00ffff; /* Efecto de brillo en el texto */
+}
+
+p {
+    margin-bottom: 25px;
+    line-height: 1.6; /* Espaciado entre líneas para mejor lectura */
+    color: #c0c0c0; /* Gris medio para el texto general */
+}
+
+.controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px; /* Espacio entre los grupos de control */
+    margin-bottom: 30px;
+}
+
+.control-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+label {
+    font-size: 1.1em;
+    color: #a0ffff; /* Cian claro para las etiquetas */
+    margin-bottom: 5px;
+}
+
+/* Estilos generales para input type="range" (deslizadores) */
+input[type="range"] {
+    width: 80%;
+    -webkit-appearance: none; /* Elimina estilos por defecto de Chrome/Safari */
+    background: transparent; /* Hace que el fondo del input sea transparente */
+    margin: 0;
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 10px;
+    cursor: pointer;
+    background: #008888; /* Color de la pista del deslizador */
+    border-radius: 5px;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border: 2px solid #00ffff; /* Borde del "pulgar" (controlador) */
+    height: 20px;
+    width: 20px;
+    border-radius: 50%; /* Lo hace redondo */
+    background: #00ffff; /* Color del "pulgar" */
+    cursor: pointer;
+    margin-top: -5px; /* Centra el thumb en la pista */
+    box-shadow: 0 0 5px #00ffff; /* Sombra brillante en el pulgar */
+}
+
+input[type="range"]:focus::-webkit-slider-runnable-track {
+    background: #00aaaa; /* Color de la pista al enfocar */
+}
+
+/* Estilos para Firefox - deslizadores */
+input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 10px;
+    cursor: pointer;
+    background: #008888;
+    border-radius: 5px;
+    box-shadow: 1px 1px 1px #000000, 0px 0px 1px #0d0d0d;
+}
+
+input[type="range"]::-moz-range-thumb {
+    border: 2px solid #00ffff;
+    height: 20px;
+    width: 20px;
+    border-radius: 50%;
+    background: #00ffff;
+    cursor: pointer;
+    box-shadow: 0 0 5px #00ffff;
+}
+
+/* Grupo de botones principales (Reproducir '1', '0', Detener) */
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 15px; /* Espacio entre botones */
+    flex-wrap: wrap; /* Permite que los botones se envuelvan en pantallas pequeñas */
+}
+
+button {
+    background-color: #00ffff; /* Cian brillante */
+    color: #1a1a2e; /* Color de texto oscuro para contraste */
+    border: none;
+    border-radius: 8px;
+    padding: 12px 25px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s; /* Animación suave al interactuar */
+    box-shadow: 0 5px 15px rgba(0, 255, 255, 0.4); /* Sombra brillante */
+    font-weight: bold;
+}
+
+button:hover {
+    background-color: #00dddd;
+    transform: translateY(-2px); /* Pequeño levantamiento al pasar el ratón */
+}
+
+button:active {
+    background-color: #00aaaa;
+    transform: translateY(0); /* Vuelve a la posición original al hacer clic */
+    box-shadow: 0 2px 5px rgba(0, 255, 255, 0.4); /* Sombra más pequeña al hacer clic */
+}
+
+/* Estilo específico para el botón Detener Sonido */
+#stopButton {
+    background-color: #ff4d4d; /* Rojo para detener */
+    color: #ffffff;
+    box-shadow: 0 5px 15px rgba(255, 77, 77, 0.4);
+}
+
+#stopButton:hover {
+    background-color: #cc3333;
+}
+
+#stopButton:active {
+    background-color: #aa2222;
+}
+
+/* Estilo para los botones cuando se activan con el teclado (opcional, para feedback visual) */
+button.active {
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0, 255, 255, 0.4);
+    background-color: #00aaaa; /* O un color que indique que está "presionado" */
+}
+
+/* Sección de Información "Cómo funciona" */
+.info {
+    text-align: left;
+    margin-top: 30px;
+    border-top: 1px dashed #4a4a6a; /* Borde superior punteado */
+    padding-top: 20px;
+    font-size: 0.9em;
+    color: #b0b0b0;
+}
+
+.info ul {
+    list-style: none; /* Quita los puntos de la lista */
+    padding: 0;
+}
+
+.info li {
+    margin-bottom: 8px;
+}
+
+.info strong {
+    color: #a0ffff; /* Resalta el texto importante en cian claro */
+}
+
+
+/* NUEVOS ESTILOS PARA LA SECCIÓN DE SECUENCIA DE TEXTO */
 .sequence-control {
     margin-top: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 15px;
-    background-color: #3a3a5a;
+    background-color: #3a3a5a; /* Fondo similar al de otros controles */
     border-radius: 8px;
     padding: 20px;
-    box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.2);
+    box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.2); /* Sombra interna para un efecto de profundidad */
 }
 
 .sequence-control label {
@@ -21,23 +211,23 @@
 #sequenceInput {
     width: 90%;
     padding: 10px;
-    border: 2px solid #00ffff;
+    border: 2px solid #00ffff; /* Borde cian */
     border-radius: 5px;
-    background-color: #1a1a2e;
-    color: #e0e0e0;
-    font-family: monospace;
+    background-color: #1a1a2e; /* Fondo oscuro */
+    color: #e0e0e0; /* Texto claro */
+    font-family: monospace; /* Fuente monoespaciada para el input */
     font-size: 1em;
-    outline: none;
-    box-shadow: 0 0 5px rgba(0, 255, 255, 0.4);
+    outline: none; /* Quita el contorno azul al enfocar */
+    box-shadow: 0 0 5px rgba(0, 255, 255, 0.4); /* Sombra brillante */
 }
 
 #sequenceInput::placeholder {
-    color: #808080;
+    color: #808080; /* Color del texto de marcador de posición */
 }
 
 #sequenceInput:focus {
-    border-color: #00dddd;
-    box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+    border-color: #00dddd; /* Borde al enfocar */
+    box-shadow: 0 0 8px rgba(0, 255, 255, 0.6); /* Sombra más fuerte al enfocar */
 }
 
 #playSequenceButton {
@@ -49,7 +239,7 @@
     font-size: 1.1em;
     cursor: pointer;
     transition: background-color 0.2s, transform 0.1s;
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4); /* Sombra verde */
     font-weight: bold;
 }
 
@@ -60,6 +250,93 @@
 
 #playSequenceButton:active {
     background-color: #398e39;
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(76, 175, 80, 0.4);
+}
+
+/* NUEVOS ESTILOS PARA LOS CONTROLES DE GRABACIÓN */
+.recording-controls {
+    margin-top: 30px;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    background-color: #3a3a5a; /* Fondo similar al de secuencia */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: inset 0 0 10px rgba(0, 255, 255, 0.2);
+}
+
+#recordButton, #stopRecordButton {
+    background-color: #FFA500; /* Naranja para grabar */
+    color: #1a1a2e;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 25px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 5px 15px rgba(255, 165, 0, 0.4); /* Sombra naranja */
+    font-weight: bold;
+}
+
+#recordButton:hover, #stopRecordButton:hover {
+    background-color: #e69500;
+    transform: translateY(-2px);
+}
+
+#recordButton:active, #stopRecordButton:active {
+    background-color: #cc8400;
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(255, 165, 0, 0.4);
+}
+
+#stopRecordButton {
+    background-color: #cc0000; /* Rojo más oscuro para detener grabación */
+    box-shadow: 0 5px 15px rgba(204, 0, 0, 0.4);
+}
+
+#stopRecordButton:hover {
+    background-color: #990000;
+}
+
+#stopRecordButton:active {
+    background-color: #660000;
+}
+
+/* Estilos para botones deshabilitados */
+#recordButton:disabled, #stopRecordButton:disabled {
+    opacity: 0.5; /* Hace el botón más transparente */
+    cursor: not-allowed; /* Cambia el cursor para indicar que no se puede hacer clic */
+    box-shadow: none; /* Quita la sombra */
+    transform: none; /* Quita la animación */
+}
+
+#downloadLink {
+    background-color: #008CBA; /* Azul para descargar */
+    color: white;
+    text-decoration: none; /* Quita el subrayado del enlace */
+    border-radius: 8px;
+    padding: 12px 25px;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 5px 15px rgba(0, 140, 186, 0.4); /* Sombra azul */
+    font-weight: bold;
+    display: inline-block; /* Para que el padding y el tamaño funcionen como botón */
+    line-height: normal; /* Asegura que el texto esté centrado */
+}
+
+#downloadLink:hover {
+    background-color: #007B9E;
+    transform: translateY(-2px);
+}
+
+#downloadLink:active {
+    background-color: #006080;
+    transform: translateY(0);
+    box-shadow: 0 2px 5px rgba(0, 140, 186, 0.4);
+}
     transform: translateY(0);
     box-shadow: 0 2px 5px rgba(76, 175, 80, 0.4);
 }
