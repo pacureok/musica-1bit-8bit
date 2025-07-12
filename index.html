@@ -27,7 +27,13 @@
                 <button id="buttonZero">Reproducir '0'</button>
                 <button id="stopButton">Detener Sonido</button>
             </div>
-        </div>
+
+            <div class="sequence-control">
+                <label for="sequenceInput">Ingresar Secuencia (ej: 1,0,3hz,56%):</label>
+                <input type="text" id="sequenceInput" placeholder="Ej: 1,0,200hz,75% para un tono; 1,0,1,0... para secuencia">
+                <button id="playSequenceButton">Reproducir Secuencia</button>
+            </div>
+            </div>
 
         <div class="info">
             <p><strong>Cómo funciona:</strong></p>
@@ -38,6 +44,13 @@
                 <li>Mantén pulsados los botones '1' o '0' para escuchar el tono, suéltalos para detener.</li>
                 <li>'Detener Sonido' apaga cualquier sonido activo.</li>
                 <li>También puedes usar las teclas <strong>'1'</strong> y <strong>'0'</strong> de tu teclado para activar los sonidos.</li>
+                <li>En "Ingresar Secuencia", puedes escribir parámetros separados por comas.</li>
+                <ul>
+                    <li>Para un solo tono: <code>[tipo], [frecuencia en Hz], [volumen en %]</code> (ej: <code>1, 300hz, 80%</code>).</li>
+                    <li>Puedes omitir 'tipo' si solo quieres un tono específico (ej: <code>300hz, 80%</code>).</li>
+                    <li>Para una secuencia de '1' y '0': <code>1,0,1,0</code>.</li>
+                    <li>Puedes combinar: <code>1, 300hz, 80%, 0, 150hz, 50%</code> para tonos específicos en secuencia.</li>
+                </ul>
             </ul>
         </div>
     </div>
