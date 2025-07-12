@@ -72,6 +72,40 @@
                 </div>
             </div>
             
+            <div class="thirty-two-bit-section">
+                <h2>Generador de Sonido 32-bit (Experimental)</h2>
+                <p>Crea sonidos más ricos y complejos con diferentes tipos de onda y efectos.</p>
+                
+                <div class="control-group">
+                    <label for="waveType">Tipo de Onda:</label>
+                    <select id="waveType">
+                        <option value="sine">Seno (Sine)</option>
+                        <option value="square">Cuadrada (Square)</option>
+                        <option value="sawtooth">Diente de Sierra (Sawtooth)</option>
+                        <option value="triangle">Triangular (Triangle)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label for="chordNotes">Notas del Acorde (separadas por comas, ej: C4, E4, G4):</label>
+                    <input type="text" id="chordNotes" placeholder="Ej: C4, E4, G4">
+                </div>
+
+                <div class="control-group">
+                    <label for="chordDuration">Duración del Acorde (ms): <span id="chordDurationValue">500</span></label>
+                    <input type="range" id="chordDuration" min="100" max="2000" value="500" step="50">
+                </div>
+
+                <div class="control-group">
+                    <label for="delayAmount">Delay (Eco) (%): <span id="delayAmountValue">0</span></label>
+                    <input type="range" id="delayAmount" min="0" max="100" value="0">
+                </div>
+                
+                <div class="button-group">
+                    <button id="play32BitButton">Reproducir Sonido 32-bit</button>
+                    <button id="stop32BitButton">Detener Sonido 32-bit</button>
+                </div>
+            </div>
             <div class="custom-notes-section">
                 <h2>Mis Notas Personalizadas</h2>
                 <p>Usa este espacio para guardar tus propias notas, ideas o cualquier texto.</p>
@@ -99,6 +133,7 @@
                 <li>En "Música de Fondo (MP3)", puedes cargar un archivo de audio (max 20 segundos) para que suene de forma continua.</li>
                 <li>En "Reproductor de Melodías (Beta)", ingresa notas como <code>C4</code>, <code>D#5</code>, <code>F3</code> y su duración en milisegundos (ej: <code>C4:250</code>). También puedes usar <code>pausa:duracion</code>.</li>
                 <li>Para grabar la melodía, haz clic en "Grabar Melodía" y luego "Detener Grabación" cuando termine. Podrás descargar el archivo WAV.</li>
+                <li>En "Generador de Sonido 32-bit (Experimental)", selecciona el tipo de onda, ingresa notas para un acorde (ej: C4, E4, G4), ajusta la duración y el nivel de eco.</li>
             </ul>
         </div>
     </div>
