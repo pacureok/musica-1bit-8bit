@@ -7,11 +7,17 @@ let keyZeroPressed = false;
 let sequenceTimeoutId = null;
 let melodyTimeoutId = null;
 
-// Variables para la grabación de audio (general)
+// Variables para la grabación de audio (general y melodías)
 let mediaRecorder;
 let audioChunks = [];
 let audioStreamDestination; // Para conectar el audio a la grabadora
-let isRecording = false;
+let isRecording = false; // Bandera general de grabación
+
+// Variables para la grabación de audio de 32 bits
+let mediaRecorder32Bit;
+let audioChunks32Bit = [];
+let isRecording32Bit = false; // Bandera específica para la grabación de 32 bits
+let record32BitTimeoutId = null; // Para detener la grabación de 32 bits automáticamente
 
 // Variables para reproducción MP3
 let backgroundAudio;
@@ -45,6 +51,9 @@ const delayAmountRange = document.getElementById('delayAmount');
 const delayAmountValueSpan = document.getElementById('delayAmountValue');
 const play32BitButton = document.getElementById('play32BitButton');
 const stop32BitButton = document.getElementById('stop32BitButton');
+const record32BitButton = document.getElementById('record32BitButton'); // Nuevo botón de grabar 32-bit
+const stopRecord32BitButton = document.getElementById('stopRecord32BitButton'); // Nuevo botón de detener grabación 32-bit
+const download32BitLink = document.getElementById('download32BitLink'); // Nuevo enlace de descarga 32-bit
 
 let current32BitOscillators = []; // Para manejar múltiples osciladores en 32-bit
 let currentDelayNode = null;
@@ -145,8 +154,11 @@ function stopAllSound() {
     stopGeneratedSound();
     stopMp3();
     stop32BitSound(); // Detener sonidos de 32-bit
-    if (isRecording) { // Asegurarse de detener la grabación si está activa
+    if (isRecording) { // Asegurarse de detener la grabación si está activa (general)
         mediaRecorder.stop();
+    }
+    if (isRecording32Bit) { // Asegurarse de detener la grabación si está activa (32-bit)
+        mediaRecorder32Bit.stop();
     }
 }
 
@@ -295,7 +307,7 @@ playSequenceButton.addEventListener('click', () => {
 });
 
 
-// --- Lógica de Grabación de Audio General (para 1-bit/8-bit sonidos) ---
+// --- Lógica de Grabación de Audio General (para 1-bit/8-bit sonidos y melodías) ---
 
 recordButton.addEventListener('click', () => {
     initAudio();
@@ -617,6 +629,7 @@ document.addEventListener('DOMContentLoaded', () => {
     mp3VolumeValueSpan.textContent = mp3VolumeRange.value;
     chordDurationValueSpan.textContent = chordDurationRange.value; // Para la nueva sección 32-bit
     delayAmountValueSpan.textContent = delayAmountRange.value; // Para la nueva sección 32-bit
+    update32BitRecordingButtons(); // Para la nueva sección de grabación de 32-bit
 });
 
 
@@ -624,7 +637,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
 play32BitButton.addEventListener('click', () => {
     initAudio();
-    stopAllSound(); // Detener todo antes de iniciar el sonido 32-bit
+    // No detenemos todo para permitir la grabación de MP3 de fondo, etc.
+    // Solo detenemos los sonidos específicos de 32-bit si están activos
+    stop32BitSound(); 
 
     const waveType = waveTypeSelect.value;
     const notesText = chordNotesInput.value.trim();
@@ -643,9 +658,6 @@ play32BitButton.addEventListener('click', () => {
         alert('Ninguna de las notas ingresadas es válida. Por favor, usa notas como C4, E5, etc.');
         return;
     }
-
-    // Detener y limpiar osciladores anteriores de 32-bit
-    stop32BitSound();
 
     // Crear un GainNode para controlar el volumen de este acorde
     const chordGain = audioContext.createGain();
@@ -689,12 +701,23 @@ play32BitButton.addEventListener('click', () => {
     // Desconectar los nodos de ganancia después de que el sonido termine (para evitar clics)
     chordGain.gain.setValueAtTime(chordGain.gain.value, audioContext.currentTime);
     chordGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + (duration / 1000) + 0.05); // Fade out
+
+    // Limpiar osciladores y nodos de delay después de la reproducción
     setTimeout(() => {
         if (chordGain) chordGain.disconnect();
         if (currentDelayNode) currentDelayNode.disconnect();
-        if (delayFeedbackGain) delayFeedbackGain.disconnect(); // Desconectar también el gain de feedback
         current32BitOscillators = []; // Limpiar la lista
     }, duration + 100); // Un poco más de tiempo para el fade out
+
+    // Si la grabación de 32-bit está activa, detenerla después de la duración del sonido
+    if (isRecording32Bit) {
+        if (record32BitTimeoutId) clearTimeout(record32BitTimeoutId);
+        record32BitTimeoutId = setTimeout(() => {
+            if (mediaRecorder32Bit && mediaRecorder32Bit.state === 'recording') {
+                mediaRecorder32Bit.stop();
+            }
+        }, duration + 200); // Dar un poco más de tiempo para capturar el final y el eco
+    }
 });
 
 
@@ -715,9 +738,14 @@ function stop32BitSound() {
         currentDelayNode.disconnect();
         currentDelayNode = null;
     }
-    // Asegurarse de que no haya otros nodos "colgados" del flujo 32-bit
-    // Esto es un poco más complejo si la cadena es muy larga.
-    // Para esta implementación simple, desconectar el currentDelayNode debería ser suficiente.
+    if (record32BitTimeoutId) {
+        clearTimeout(record32BitTimeoutId);
+        record32BitTimeoutId = null;
+    }
+    // Si la grabación de 32-bit está activa, y se detiene manualmente el sonido, también detener la grabación
+    if (isRecording32Bit && mediaRecorder32Bit && mediaRecorder32Bit.state === 'recording') {
+        mediaRecorder32Bit.stop();
+    }
 }
 
 chordDurationRange.addEventListener('input', (event) => {
@@ -726,7 +754,65 @@ chordDurationRange.addEventListener('input', (event) => {
 
 delayAmountRange.addEventListener('input', (event) => {
     delayAmountValueSpan.textContent = event.target.value;
-    // Actualizar el valor de feedback del delay si ya existe un nodo de delay
-    // No afecta los sonidos ya reproduciéndose con un delay, solo los nuevos.
     currentDelayFeedback = parseInt(event.target.value) / 100;
 });
+
+
+// --- Lógica de Grabación para 32-bit ---
+record32BitButton.addEventListener('click', () => {
+    initAudio();
+    if (!audioContext) {
+        alert("El AudioContext no está inicializado. Intenta interactuar con la página primero.");
+        return;
+    }
+    
+    // Conectar el masterGainNode a la grabadora de 32-bit
+    audioStreamDestination = audioContext.createMediaStreamDestination();
+    masterGainNode.connect(audioStreamDestination); // La grabadora captura todo el sonido saliente
+
+    mediaRecorder32Bit = new MediaRecorder(audioStreamDestination.stream);
+    audioChunks32Bit = [];
+
+    mediaRecorder32Bit.ondataavailable = event => {
+        audioChunks32Bit.push(event.data);
+    };
+
+    mediaRecorder32Bit.onstop = () => {
+        const audioBlob = new Blob(audioChunks32Bit, { type: 'audio/wav' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        download32BitLink.href = audioUrl;
+        download32BitLink.download = `sonido_32bit_${new Date().getTime()}.wav`;
+        download32BitLink.style.display = 'block';
+        download32BitLink.textContent = 'Descargar Sonido 32-bit';
+
+        // Desconectar la grabadora y restaurar la conexión normal del masterGainNode
+        masterGainNode.disconnect(audioStreamDestination);
+       
+        isRecording32Bit = false;
+        update32BitRecordingButtons();
+        console.log("Grabación 32-bit detenida.");
+    };
+
+    mediaRecorder32Bit.start();
+    isRecording32Bit = true;
+    update32BitRecordingButtons();
+    download32BitLink.style.display = 'none';
+    download32BitLink.removeAttribute('href');
+    download32BitLink.removeAttribute('download');
+    download32BitLink.textContent = '';
+    console.log("Grabación 32-bit iniciada...");
+});
+
+stopRecord32BitButton.addEventListener('click', () => {
+    if (mediaRecorder32Bit && mediaRecorder32Bit.state === 'recording') {
+        mediaRecorder32Bit.stop();
+        console.log("Grabación 32-bit detenida por el usuario.");
+    }
+});
+
+function update32BitRecordingButtons() {
+    record32BitButton.disabled = isRecording32Bit;
+    play32BitButton.disabled = isRecording32Bit; // Deshabilita play mientras grabas
+    stopRecord32BitButton.disabled = !isRecording32Bit;
+}
