@@ -9,10 +9,10 @@ let keyZeroPressed = false;
 let sequenceTimeoutId = null; // Para la secuencia de 1,0,hz,%
 let melodyTimeoutId = null; // Para la secuencia de notas musicales
 
-// Variables para la grabación de audio
+// Variables para la grabación de audio (general)
 let mediaRecorder;
 let audioChunks = [];
-let audioStreamDestination;
+let audioStreamDestination; // Para conectar el audio a la grabadora
 let isRecording = false;
 
 // Variables para reproducción MP3
@@ -28,10 +28,15 @@ const stopMp3Button = document.getElementById('stopMp3Button');
 const mp3VolumeRange = document.getElementById('mp3VolumeRange');
 const mp3VolumeValueSpan = document.getElementById('mp3VolumeValue');
 
-// --- NUEVOS Elementos del DOM para Melodías ---
+// --- Elementos del DOM para Melodías ---
 const melodyInput = document.getElementById('melodyInput');
 const playMelodyButton = document.getElementById('playMelodyButton');
+const recordMelodyButton = document.getElementById('recordMelodyButton'); // Nuevo botón
+const stopRecordMelodyButton = document.getElementById('stopRecordMelodyButton'); // Nuevo botón
+const downloadMelodyLink = document.getElementById('downloadMelodyLink'); // Nuevo enlace
 
+// --- Elementos del DOM para Notas Personalizadas ---
+const customNotesText = document.getElementById('customNotesText'); // Nuevo elemento
 
 // Mapa de frecuencias para notas musicales (A4 = 440 Hz)
 const noteFrequencies = {
@@ -109,6 +114,9 @@ function stopGeneratedSound() {
 function stopAllSound() {
     stopGeneratedSound();
     stopMp3();
+    if (isRecording) { // Asegurarse de detener la grabación si está activa
+        mediaRecorder.stop();
+    }
 }
 
 
@@ -252,7 +260,7 @@ playSequenceButton.addEventListener('click', () => {
 });
 
 
-// --- Lógica de Grabación de Audio ---
+// --- Lógica de Grabación de Audio General (para 1-bit/8-bit sonidos) ---
 
 recordButton.addEventListener('click', () => {
     initAudio();
@@ -260,12 +268,13 @@ recordButton.addEventListener('click', () => {
         alert("El AudioContext no está inicializado. Intenta interactuar con la página primero.");
         return;
     }
-
-    gainNode.disconnect();
+    
+    // Desconectar el gainNode del destino principal temporalmente para reconectar a la grabadora
+    gainNode.disconnect(audioContext.destination);
 
     audioStreamDestination = audioContext.createMediaStreamDestination();
-    gainNode.connect(audioStreamDestination);
-    gainNode.connect(audioContext.destination);
+    gainNode.connect(audioStreamDestination); // Conectar la salida del sonido a la grabadora
+    gainNode.connect(audioContext.destination); // Reconectar al destino principal para seguir escuchando
 
     mediaRecorder = new MediaRecorder(audioStreamDestination.stream);
     audioChunks = [];
@@ -283,6 +292,7 @@ recordButton.addEventListener('click', () => {
         downloadLink.style.display = 'block';
         downloadLink.textContent = 'Descargar Audio';
 
+        // Desconectar la grabadora y restaurar la conexión normal del gainNode
         gainNode.disconnect(audioStreamDestination);
         gainNode.connect(audioContext.destination);
        
@@ -411,6 +421,7 @@ mp3VolumeRange.addEventListener('input', (event) => {
 
 let currentMelodySequence = [];
 let currentMelodyNoteIndex = 0;
+let isMelodyPlaying = false; // Nueva bandera para el estado de la melodía
 
 playMelodyButton.addEventListener('click', () => {
     stopGeneratedSound(); // Detener cualquier sonido generado o secuencia anterior
@@ -420,26 +431,33 @@ playMelodyButton.addEventListener('click', () => {
         return;
     }
 
-    // Parsear la secuencia: "Nota:Duracion" o "pausa:Duracion"
-    currentMelodySequence = melodyText.split(',').map(s => {
-        const parts = s.trim().split(':');
-        const note = parts[0].toUpperCase();
-        let duration = parseInt(parts[1]); // Duración en milisegundos
-
-        if (isNaN(duration) || duration <= 0) {
-            console.warn(`Duración inválida para ${note}: ${parts[1]}. Usando duración por defecto de 250ms.`);
-            duration = 250; // Duración por defecto si es inválida
-        }
-        return { note: note, duration: duration };
-    });
-    
+    parseMelodySequence(melodyText);
     currentMelodyNoteIndex = 0;
+    isMelodyPlaying = true; // La melodía está empezando a sonar
     playNextMelodyNote();
 });
 
+function parseMelodySequence(melodyText) {
+    currentMelodySequence = melodyText.split(',').map(s => {
+        const parts = s.trim().split(':');
+        const note = parts[0].toUpperCase();
+        let duration = parseInt(parts[1]);
+
+        if (isNaN(duration) || duration <= 0) {
+            console.warn(`Duración inválida para ${note}: ${parts[1]}. Usando duración por defecto de 250ms.`);
+            duration = 250;
+        }
+        return { note: note, duration: duration };
+    });
+}
+
 function playNextMelodyNote() {
-    if (currentMelodyNoteIndex >= currentMelodySequence.length) {
-        stopGeneratedSound(); // Melodía terminada
+    if (!isMelodyPlaying || currentMelodyNoteIndex >= currentMelodySequence.length) {
+        stopGeneratedSound(); // Melodía terminada o detenida externamente
+        isMelodyPlaying = false; // Asegurar que el estado sea detenido
+        if (isRecording) { // Si se estaba grabando la melodía, detener la grabación
+            mediaRecorder.stop();
+        }
         return;
     }
 
@@ -459,22 +477,115 @@ function playNextMelodyNote() {
     }
 
     if (frequency > 0) {
-        playSound(frequency, currentVolume); 
+        playSound(frequency, currentVolume);
     } else {
         stopGeneratedSound(); // Asegura silencio para las pausas o notas no reconocidas
     }
 
     currentMelodyNoteIndex++;
     melodyTimeoutId = setTimeout(() => {
-        stopGeneratedSound(); // Apagar la nota actual antes de la siguiente
-        playNextMelodyNote();
-    }, duration); // Usar la duración específica de la nota/pausa
+        if (isMelodyPlaying) { // Solo detener y continuar si la melodía sigue activa
+            stopGeneratedSound(); // Apagar la nota actual antes de la siguiente
+            playNextMelodyNote();
+        }
+    }, duration);
+}
+
+// Lógica de Grabación de Melodías
+recordMelodyButton.addEventListener('click', () => {
+    initAudio();
+    if (!audioContext) {
+        alert("El AudioContext no está inicializado. Intenta interactuar con la página primero.");
+        return;
+    }
+
+    const melodyText = melodyInput.value.trim();
+    if (melodyText === '') {
+        alert('Por favor, ingresa una secuencia de notas para grabar.');
+        return;
+    }
+
+    // Preparar MediaRecorder
+    gainNode.disconnect(audioContext.destination); // Desconectar temporalmente
+    audioStreamDestination = audioContext.createMediaStreamDestination();
+    gainNode.connect(audioStreamDestination);
+    gainNode.connect(audioContext.destination); // Reconectar para escuchar mientras grabas
+
+    mediaRecorder = new MediaRecorder(audioStreamDestination.stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = event => {
+        audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        downloadMelodyLink.href = audioUrl;
+        downloadMelodyLink.download = `melodia_arcade_${new Date().getTime()}.wav`;
+        downloadMelodyLink.style.display = 'block';
+        downloadMelodyLink.textContent = 'Descargar Melodía';
+
+        // Restaurar conexiones de audio
+        gainNode.disconnect(audioStreamDestination);
+        gainNode.connect(audioContext.destination);
+        
+        isRecording = false;
+        updateMelodyRecordingButtons();
+        console.log("Grabación de melodía detenida.");
+    };
+
+    // Iniciar grabación y reproducción de la melodía
+    mediaRecorder.start();
+    isRecording = true; // Bandera general de grabación activa
+    updateMelodyRecordingButtons();
+    downloadMelodyLink.style.display = 'none';
+    downloadMelodyLink.removeAttribute('href');
+    downloadMelodyLink.removeAttribute('download');
+    downloadMelodyLink.textContent = '';
+
+    console.log("Grabación de melodía iniciada...");
+
+    // Iniciar la reproducción de la melodía
+    parseMelodySequence(melodyText);
+    currentMelodyNoteIndex = 0;
+    isMelodyPlaying = true;
+    playNextMelodyNote();
+});
+
+stopRecordMelodyButton.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        // Al detener la grabación, también detén la reproducción de la melodía
+        isMelodyPlaying = false; // Esto detendrá el loop de playNextMelodyNote
+        mediaRecorder.stop();
+    }
+});
+
+function updateMelodyRecordingButtons() {
+    recordMelodyButton.disabled = isRecording;
+    playMelodyButton.disabled = isRecording; // Deshabilitar play mientras grabas
+    stopRecordMelodyButton.disabled = !isRecording;
 }
 
 
-// Inicializar estado de botones al cargar
+// --- Lógica para Notas Personalizadas (Guardar/Cargar en Local Storage) ---
+
+// Cargar notas al iniciar la página
 document.addEventListener('DOMContentLoaded', () => {
-    updateRecordingButtons();
+    const savedNotes = localStorage.getItem('customArcadeNotes');
+    if (savedNotes) {
+        customNotesText.value = savedNotes;
+    }
+
+    // Guardar notas cada vez que el usuario escribe
+    customNotesText.addEventListener('input', () => {
+        localStorage.setItem('customArcadeNotes', customNotesText.value);
+    });
+
+    // Inicializar estado de botones al cargar
+    updateRecordingButtons(); // Para la sección general
+    updateMelodyRecordingButtons(); // Para la sección de melodías
     playMp3Button.disabled = true;
     stopMp3Button.disabled = true;
     mp3VolumeValueSpan.textContent = mp3VolumeRange.value;
