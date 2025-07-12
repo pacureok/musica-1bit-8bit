@@ -144,7 +144,7 @@ button:active {
     box-shadow: 0 2px 5px rgba(0, 255, 255, 0.4); /* Sombra más pequeña al hacer clic */
 }
 
-/* Estilo específico para el botón Detener Sonido */
+/* Estilo específico para el botón Detener Todo */
 #stopButton {
     background-color: #ff4d4d; /* Rojo para detener */
     color: #ffffff;
@@ -190,7 +190,7 @@ button.active {
 }
 
 
-/* NUEVOS ESTILOS PARA LA SECCIÓN DE SECUENCIA DE TEXTO */
+/* ESTILOS PARA LA SECCIÓN DE SECUENCIA DE TEXTO */
 .sequence-control {
     margin-top: 30px;
     display: flex;
@@ -254,7 +254,7 @@ button.active {
     box-shadow: 0 2px 5px rgba(76, 175, 80, 0.4);
 }
 
-/* NUEVOS ESTILOS PARA LOS CONTROLES DE GRABACIÓN */
+/* ESTILOS PARA LOS CONTROLES DE GRABACIÓN */
 .recording-controls {
     margin-top: 30px;
     display: flex;
@@ -337,8 +337,107 @@ button.active {
     transform: translateY(0);
     box-shadow: 0 2px 5px rgba(0, 140, 186, 0.4);
 }
-    transform: translateY(0);
-    box-shadow: 0 2px 5px rgba(76, 175, 80, 0.4);
+
+
+/* ESTILOS PARA LA SECCIÓN DE CONTROL DE MP3 */
+.mp3-controls {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    background-color: #4a4a6a; /* Un fondo diferente para distinguirlo */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: inset 0 0 10px rgba(0, 150, 255, 0.2); /* Sombra azul para MP3 */
 }
 
-/* ... (el resto de tu CSS) ... */
+.mp3-controls h2 {
+    color: #90ee90; /* Verde claro */
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    text-shadow: 0 0 5px #90ee90;
+}
+
+.mp3-controls .control-group {
+    width: 100%; /* Para que el input de archivo ocupe más espacio */
+}
+
+#mp3FileInput {
+    width: 90%; /* Ajustar el ancho del input de archivo */
+    padding: 10px;
+    border: 2px solid #90ee90;
+    border-radius: 5px;
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+    font-family: monospace;
+    font-size: 1em;
+    outline: none;
+    box-shadow: 0 0 5px rgba(144, 238, 144, 0.4);
+    cursor: pointer;
+}
+
+#mp3FileInput::-webkit-file-upload-button {
+    background-color: #90ee90;
+    color: #1a1a2e;
+    border: 1px solid #1a1a2e;
+    border-radius: 5px;
+    padding: 8px 15px;
+    cursor: pointer;
+    font-family: 'Press Start 2P', cursive, monospace;
+}
+
+#mp3FileInput:hover::-webkit-file-upload-button {
+    background-color: #7ede7e;
+}
+
+
+#mp3VolumeRange {
+    /* Mismos estilos que los otros ranges */
+    width: 80%;
+    -webkit-appearance: none;
+    background: transparent;
+    margin: 0;
+}
+#mp3VolumeRange::-webkit-slider-runnable-track {
+    background: #00aa00; /* Verde oscuro para pista MP3 */
+}
+#mp3VolumeRange::-webkit-slider-thumb {
+    background: #90ee90; /* Verde claro para thumb MP3 */
+    border-color: #90ee90;
+    box-shadow: 0 0 5px #90ee90;
+}
+#mp3VolumeRange:focus::-webkit-slider-runnable-track {
+    background: #00cc00;
+}
+/* Firefox */
+#mp3VolumeRange::-moz-range-track {
+    background: #00aa00;
+}
+#mp3VolumeRange::-moz-range-thumb {
+    background: #90ee90;
+    border-color: #90ee90;
+    box-shadow: 0 0 5px #90ee90;
+}
+
+
+.mp3-controls .button-group {
+    /* Reutiliza el estilo de button-group principal */
+    gap: 10px; /* Un poco menos de espacio entre los botones MP3 */
+}
+
+#playMp3Button {
+    background-color: #00bfff; /* Azul cielo para reproducir MP3 */
+    color: #1a1a2e;
+    box-shadow: 0 5px 15px rgba(0, 191, 255, 0.4);
+}
+#playMp3Button:hover { background-color: #00aadd; }
+#playMp3Button:active { background-color: #0088bb; }
+
+#stopMp3Button {
+    background-color: #ff6347; /* Tomate para detener MP3 */
+    color: #ffffff;
+    box-shadow: 0 5px 15px rgba(255, 99, 71, 0.4);
+}
+#stopMp3Button:hover { background-color: #e04c32; }
+#stopMp3Button:active { background-color: #c03d24; }
