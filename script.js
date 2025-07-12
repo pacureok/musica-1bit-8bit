@@ -31,8 +31,8 @@ const mp3VolumeValueSpan = document.getElementById('mp3VolumeValue');
 // --- NUEVOS Elementos del DOM para Melodías ---
 const melodyInput = document.getElementById('melodyInput');
 const playMelodyButton = document.getElementById('playMelodyButton');
-const noteDurationRange = document.getElementById('noteDuration');
-const noteDurationValueSpan = document.getElementById('noteDurationValue');
+// const noteDurationRange = document.getElementById('noteDuration'); // Eliminado, ahora la duración es por nota
+// const noteDurationValueSpan = document.getElementById('noteDurationValue'); // Eliminado
 
 
 // Mapa de frecuencias para notas musicales (A4 = 440 Hz)
@@ -59,7 +59,6 @@ function initAudio() {
         gainNode.gain.setValueAtTime(0, audioContext.currentTime);
 
         // Inicializar nodos para el audio de fondo (MP3)
-        // backgroundAudio se creará dinámicamente al cargar el archivo
         backgroundGainNode = audioContext.createGain();
         backgroundGainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Volumen inicial para MP3
         backgroundGainNode.connect(audioContext.destination);
@@ -264,10 +263,6 @@ recordButton.addEventListener('click', () => {
         return;
     }
 
-    // Desconectar el gainNode de la salida directa del navegador si ya está conectado
-    // y reconectarlo para asegurar que el stream de grabación lo capture.
-    // Esto es un poco delicado con AudioContext, a veces es mejor manejarlo con un nodo intermedio.
-    // Para simplificar, vamos a asegurar que gainNode esté conectado a *ambos* destinos.
     gainNode.disconnect(); // Desconecta de cualquier destino anterior
 
     audioStreamDestination = audioContext.createMediaStreamDestination();
@@ -290,11 +285,7 @@ recordButton.addEventListener('click', () => {
         downloadLink.style.display = 'block';
         downloadLink.textContent = 'Descargar Audio';
 
-        // Una vez que se detiene la grabación, desconectar de la grabadora
         gainNode.disconnect(audioStreamDestination);
-        // Asegurarse de que el gainNode esté conectado a la salida principal después de la grabación
-        // Si ya está conectado a audioContext.destination (lo cual debería estarlo por la línea de arriba),
-        // no es necesario reconectar, pero lo dejamos para claridad.
         gainNode.connect(audioContext.destination);
        
         isRecording = false;
@@ -339,18 +330,16 @@ mp3FileInput.addEventListener('change', (event) => {
     reader.onload = e => {
         initAudio();
         audioContext.decodeAudioData(e.target.result, (buffer) => {
-            // Si ya hay un backgroundAudio reproduciéndose, detenerlo y desconectarlo
             if (backgroundIsPlaying && backgroundAudio) {
                 backgroundAudio.stop();
                 backgroundAudio.disconnect();
             }
-            // Crear un nuevo BufferSource para el nuevo archivo
+            
             backgroundAudio = audioContext.createBufferSource();
             backgroundAudio.buffer = buffer;
-            backgroundAudio.loop = true; // Para que se repita
+            backgroundAudio.loop = true;
 
             backgroundAudio.connect(backgroundGainNode);
-            // backgroundGainNode ya está conectado a audioContext.destination en initAudio
 
             playMp3Button.disabled = false;
             stopMp3Button.disabled = true;
@@ -367,16 +356,14 @@ mp3FileInput.addEventListener('change', (event) => {
 
 playMp3Button.addEventListener('click', () => {
     if (backgroundAudio && backgroundAudio.buffer) {
-        // Para reproducir un AudioBufferSourceNode de nuevo, debes crear uno nuevo
-        // y asignarle el mismo buffer.
         if (backgroundIsPlaying) {
             backgroundAudio.stop();
             backgroundAudio.disconnect();
         }
         
-        const currentBuffer = backgroundAudio.buffer; // Guarda el buffer actual
-        backgroundAudio = audioContext.createBufferSource(); // Crea una nueva instancia
-        backgroundAudio.buffer = currentBuffer; // Asigna el buffer guardado
+        const currentBuffer = backgroundAudio.buffer;
+        backgroundAudio = audioContext.createBufferSource();
+        backgroundAudio.buffer = currentBuffer;
         backgroundAudio.loop = true;
         backgroundAudio.connect(backgroundGainNode);
         backgroundGainNode.connect(audioContext.destination);
@@ -388,7 +375,6 @@ playMp3Button.addEventListener('click', () => {
         stopMp3Button.disabled = false;
         console.log("MP3 reproduciendo...");
 
-        // Establecer un temporizador para detener la reproducción si excede el límite
         if (backgroundAudio.buffer.duration > MAX_MP3_DURATION) {
             setTimeout(() => {
                 if (backgroundIsPlaying) {
@@ -411,8 +397,6 @@ function stopMp3() {
         playMp3Button.disabled = false;
         stopMp3Button.disabled = true;
         console.log("MP3 detenido.");
-        // No es necesario recrear backgroundAudio aquí, se hará al volver a reproducir
-        // o al cargar un nuevo archivo.
     }
 }
 
@@ -425,38 +409,46 @@ mp3VolumeRange.addEventListener('input', (event) => {
 });
 
 
-// --- NUEVA FUNCIONALIDAD: Reproductor de Melodías (Beta) ---
+// --- NUEVA FUNCIONALIDAD: Reproductor de Melodías (Beta) con duración por nota ---
 
-let currentMelodyNotes = [];
-let currentMelodyIndex = 0;
-let currentNoteDuration = parseInt(noteDurationRange.value);
-
-noteDurationRange.addEventListener('input', (event) => {
-    currentNoteDuration = parseInt(event.target.value);
-    noteDurationValueSpan.textContent = currentNoteDuration;
-});
+let currentMelodySequence = [];
+let currentMelodyNoteIndex = 0;
 
 playMelodyButton.addEventListener('click', () => {
     stopGeneratedSound(); // Detener cualquier sonido generado o secuencia anterior
     const melodyText = melodyInput.value.trim();
     if (melodyText === '') {
-        alert('Por favor, ingresa una secuencia de notas (ej: C4, D4, E4).');
+        alert('Por favor, ingresa una secuencia de notas (ej: C4:250, D4:500).');
         return;
     }
 
-    currentMelodyNotes = melodyText.split(',').map(s => s.trim().toUpperCase()); // Convertir a mayúsculas
-    currentMelodyIndex = 0;
+    // Parsear la secuencia: "Nota:Duracion" o "pausa:Duracion"
+    currentMelodySequence = melodyText.split(',').map(s => {
+        const parts = s.trim().split(':');
+        const note = parts[0].toUpperCase();
+        const duration = parseInt(parts[1]); // Duración en milisegundos
 
+        if (isNaN(duration) || duration <= 0) {
+            console.warn(`Duración inválida para ${note}: ${parts[1]}. Usando duración por defecto de 250ms.`);
+            return { note: note, duration: 250 }; // Duración por defecto si es inválida
+        }
+        return { note: note, duration: duration };
+    });
+    
+    currentMelodyNoteIndex = 0;
     playNextMelodyNote();
 });
 
 function playNextMelodyNote() {
-    if (currentMelodyIndex >= currentMelodyNotes.length) {
+    if (currentMelodyNoteIndex >= currentMelodySequence.length) {
         stopGeneratedSound(); // Melodía terminada
         return;
     }
 
-    const note = currentMelodyNotes[currentMelodyIndex];
+    const currentItem = currentMelodySequence[currentMelodyNoteIndex];
+    const note = currentItem.note;
+    const duration = currentItem.duration;
+
     let frequency = 0; // Por defecto, silencio
 
     if (note.toLowerCase() === 'pausa' || note.toLowerCase() === 'silencio' || note === '_') {
@@ -464,22 +456,21 @@ function playNextMelodyNote() {
     } else if (noteFrequencies[note]) {
         frequency = noteFrequencies[note];
     } else {
-        console.warn(`Nota desconocida: ${note}. Ignorando.`);
+        console.warn(`Nota desconocida: ${note}. Tratando como silencio.`);
         frequency = 0; // Tratar como silencio si la nota no se reconoce
     }
 
     if (frequency > 0) {
-        // Usamos un volumen fijo para las melodías, o podrías usar currentVolume
         playSound(frequency, currentVolume); 
     } else {
         stopGeneratedSound(); // Asegura silencio para las pausas o notas no reconocidas
     }
 
-    currentMelodyIndex++;
+    currentMelodyNoteIndex++;
     melodyTimeoutId = setTimeout(() => {
         stopGeneratedSound(); // Apagar la nota actual antes de la siguiente
         playNextMelodyNote();
-    }, currentNoteDuration);
+    }, duration); // Usar la duración específica de la nota/pausa
 }
 
 
@@ -489,5 +480,5 @@ document.addEventListener('DOMContentLoaded', () => {
     playMp3Button.disabled = true;
     stopMp3Button.disabled = true;
     mp3VolumeValueSpan.textContent = mp3VolumeRange.value;
-    noteDurationValueSpan.textContent = noteDurationRange.value; // Inicializar valor de duración de nota
+    // noteDurationValueSpan.textContent = noteDurationRange.value; // Ya no es necesario
 });
