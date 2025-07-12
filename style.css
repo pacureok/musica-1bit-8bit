@@ -485,6 +485,7 @@ button.active {
     box-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
 }
 
+/* El slider de duración de nota ya no está en el HTML, pero si lo reintroduces, estos estilos serían para él */
 #noteDuration {
     /* Mismos estilos que otros ranges, pero con colores de melodía */
     width: 80%;
