@@ -10,6 +10,12 @@ let keyZeroPressed = false;
 // Variables para controlar la secuencia
 let sequenceTimeoutId = null; // Para poder cancelar la secuencia en curso
 
+// Variables para la grabación de audio
+let mediaRecorder;
+let audioChunks = [];
+let audioStreamDestination; // Para conectar el audio a la grabadora
+let isRecording = false;
+
 // Función para inicializar el contexto de audio y los nodos
 function initAudio() {
     if (!audioContext) {
@@ -18,6 +24,8 @@ function initAudio() {
         gainNode = audioContext.createGain();
 
         oscillator.connect(gainNode);
+        // Conectar el nodo de ganancia a un destino que puede ser la salida (altavoces) o la grabadora
+        // Inicialmente, solo a los altavoces
         gainNode.connect(audioContext.destination);
 
         oscillator.type = 'square';
@@ -28,20 +36,18 @@ function initAudio() {
 
 // Función para reproducir un sonido con una frecuencia y volumen específicos
 function playSound(frequency, volumePercentage) {
-    initAudio(); // Asegura que el contexto de audio esté inicializado
+    initAudio();
 
-    // Detener cualquier sonido anterior de forma suave para evitar clics
     if (isPlaying && gainNode) {
         gainNode.gain.cancelScheduledValues(audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.005); // Muy rápido
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.005);
         isPlaying = false;
     }
 
-    const maxBaseFrequency = 2000; // Frecuencia máxima base en Hz
-    // Asegura que la frecuencia esté dentro de un rango razonable
+    const maxBaseFrequency = 2000;
     const targetFrequency = Math.max(20, Math.min(maxBaseFrequency, frequency));
 
-    const maxVolume = 0.5; // Un volumen máximo de 0.5 para evitar saturación
+    const maxVolume = 0.5;
     const targetVolume = maxVolume * (volumePercentage / 100);
 
     oscillator.frequency.setValueAtTime(targetFrequency, audioContext.currentTime);
@@ -57,10 +63,9 @@ function stopSound() {
     if (isPlaying && gainNode) {
         gainNode.gain.cancelScheduledValues(audioContext.currentTime);
         gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05); // Baja el volumen suavemente
+        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05);
         isPlaying = false;
     }
-    // Si hay una secuencia en curso, la cancelamos
     if (sequenceTimeoutId) {
         clearTimeout(sequenceTimeoutId);
         sequenceTimeoutId = null;
@@ -69,7 +74,6 @@ function stopSound() {
 
 // --- Event Listeners para la interacción ---
 
-// Obtener referencias a los elementos del DOM
 const masterFrequencyRange = document.getElementById('masterFrequencyRange');
 const masterFrequencyValueSpan = document.getElementById('masterFrequencyValue');
 const volumeRange = document.getElementById('volumeRange');
@@ -77,14 +81,15 @@ const volumeValueSpan = document.getElementById('volumeValue');
 const buttonOne = document.getElementById('buttonOne');
 const buttonZero = document.getElementById('buttonZero');
 const stopButton = document.getElementById('stopButton');
-const sequenceInput = document.getElementById('sequenceInput'); // Nuevo
-const playSequenceButton = document.getElementById('playSequenceButton'); // Nuevo
+const sequenceInput = document.getElementById('sequenceInput');
+const playSequenceButton = document.getElementById('playSequenceButton');
+const recordButton = document.getElementById('recordButton'); // Nuevo
+const stopRecordButton = document.getElementById('stopRecordButton'); // Nuevo
+const downloadLink = document.getElementById('downloadLink'); // Nuevo
 
-// Variables para almacenar los valores actuales de los deslizadores
 let currentMasterFrequency = parseInt(masterFrequencyRange.value);
 let currentVolume = parseInt(volumeRange.value);
 
-// Actualizar valores al mover los deslizadores
 masterFrequencyRange.addEventListener('input', (event) => {
     currentMasterFrequency = parseInt(event.target.value);
     masterFrequencyValueSpan.textContent = currentMasterFrequency;
@@ -95,7 +100,6 @@ volumeRange.addEventListener('input', (event) => {
     volumeValueSpan.textContent = currentVolume;
 });
 
-// Eventos para el botón '1' (mantener pulsado)
 buttonOne.addEventListener('mousedown', () => {
     const frequencyForOne = currentMasterFrequency * 1.1;
     playSound(frequencyForOne, currentVolume);
@@ -103,7 +107,6 @@ buttonOne.addEventListener('mousedown', () => {
 buttonOne.addEventListener('mouseup', stopSound);
 buttonOne.addEventListener('mouseleave', stopSound);
 
-// Eventos para el botón '0' (mantener pulsado)
 buttonZero.addEventListener('mousedown', () => {
     const frequencyForZero = currentMasterFrequency * 0.9;
     playSound(frequencyForZero, currentVolume);
@@ -111,13 +114,10 @@ buttonZero.addEventListener('mousedown', () => {
 buttonZero.addEventListener('mouseup', stopSound);
 buttonZero.addEventListener('mouseleave', stopSound);
 
-// Evento para el botón de detener
 stopButton.addEventListener('click', stopSound);
 
-// --- NUEVA FUNCIONALIDAD: Eventos de teclado ---
-
 document.addEventListener('keydown', (event) => {
-    initAudio(); // Asegurarse de que el contexto de audio esté listo
+    initAudio();
 
     if (event.key === '1' && !keyOnePressed) {
         const frequencyForOne = currentMasterFrequency * 1.1;
@@ -144,10 +144,8 @@ document.addEventListener('keyup', (event) => {
     }
 });
 
-// --- NUEVA FUNCIONALIDAD: Reproducción de Secuencia desde el Input ---
-
 playSequenceButton.addEventListener('click', () => {
-    stopSound(); // Detener cualquier sonido o secuencia anterior
+    stopSound();
     const sequenceText = sequenceInput.value.trim();
     if (sequenceText === '') {
         alert('Por favor, ingresa una secuencia válida (ej: 1,0,300hz,80%).');
@@ -156,40 +154,32 @@ playSequenceButton.addEventListener('click', () => {
 
     const segments = sequenceText.split(',').map(s => s.trim());
     let segmentIndex = 0;
-    const delayBetweenTones = 200; // milisegundos de pausa entre tonos en secuencia
+    const delayBetweenTones = 200;
 
     function playNextSegment() {
         if (segmentIndex >= segments.length) {
-            stopSound(); // Terminó la secuencia
+            stopSound();
             return;
         }
 
         const segment = segments[segmentIndex];
-        let targetFrequency = currentMasterFrequency * 1.0; // Frecuencia base por defecto
-        let targetVolume = currentVolume; // Volumen base por defecto
+        let targetFrequency = currentMasterFrequency * 1.0;
+        let targetVolume = currentVolume;
 
-        // Intentar parsear el segmento
-        const hzMatch = segment.match(/(\d+)hz/i); // Coincide con números seguidos de 'hz'
-        const percentMatch = segment.match(/(\d+)%/); // Coincide con números seguidos de '%'
+        const hzMatch = segment.match(/(\d+)hz/i);
+        const percentMatch = segment.match(/(\d+)%/);
 
         if (hzMatch) {
-            // Si el segmento es una frecuencia (ej: "300hz")
             targetFrequency = parseInt(hzMatch[1]);
-            // Si no hay volumen explícito, usa el actual del deslizador
             targetVolume = percentMatch ? parseInt(percentMatch[1]) : currentVolume;
         } else if (percentMatch) {
-            // Si el segmento es solo un porcentaje de volumen (ej: "80%")
             targetVolume = parseInt(percentMatch[1]);
-            // La frecuencia se mantiene como la base actual del deslizador
         } else if (segment === '1') {
-            // Si es '1', usa la frecuencia "para 1" y el volumen actual
             targetFrequency = currentMasterFrequency * 1.1;
         } else if (segment === '0') {
-            // Si es '0', usa la frecuencia "para 0" y el volumen actual
             targetFrequency = currentMasterFrequency * 0.9;
         } else {
             console.warn(`Segmento desconocido en la secuencia: ${segment}. Ignorando.`);
-            // No hacer nada si el segmento no se puede interpretar
             segmentIndex++;
             sequenceTimeoutId = setTimeout(playNextSegment, delayBetweenTones);
             return;
@@ -198,12 +188,81 @@ playSequenceButton.addEventListener('click', () => {
         playSound(targetFrequency, targetVolume);
 
         segmentIndex++;
-        // Programar el siguiente tono después de un pequeño retardo
         sequenceTimeoutId = setTimeout(() => {
-            stopSound(); // Apagar el sonido actual antes de pasar al siguiente
+            stopSound();
             playNextSegment();
         }, delayBetweenTones);
     }
 
-    playNextSegment(); // Iniciar la reproducción de la secuencia
+    playNextSegment();
 });
+
+
+// --- NUEVA FUNCIONALIDAD: Grabación de Audio ---
+
+recordButton.addEventListener('click', () => {
+    initAudio(); // Asegura que el AudioContext esté listo
+    if (!audioContext) {
+        alert("El AudioContext no está inicializado. Intenta interactuar con la página primero.");
+        return;
+    }
+
+    // Desconectar el gainNode de la salida directa del navegador
+    // Si ya está conectado, primero desconéctalo
+    gainNode.disconnect();
+    
+    // Crear un MediaStreamDestination para grabar el audio
+    audioStreamDestination = audioContext.createMediaStreamDestination();
+    // Conectar el gainNode (donde sale el audio generado) a este destino de stream
+    gainNode.connect(audioStreamDestination);
+    // Conectar también al destino de los altavoces para seguir escuchando
+    gainNode.connect(audioContext.destination);
+
+    // Inicializar MediaRecorder
+    mediaRecorder = new MediaRecorder(audioStreamDestination.stream);
+    audioChunks = [];
+
+    mediaRecorder.ondataavailable = event => {
+        audioChunks.push(event.data);
+    };
+
+    mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' }); // O 'audio/webm'
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        downloadLink.href = audioUrl;
+        downloadLink.download = `musica_arcade_${new Date().getTime()}.wav`;
+        downloadLink.style.display = 'block'; // Mostrar el enlace de descarga
+        downloadLink.textContent = 'Descargar Audio';
+
+        // Una vez que se detiene la grabación, reconectar el gainNode solo a los altavoces
+        gainNode.disconnect(audioStreamDestination); // Desconectar de la grabadora
+        gainNode.connect(audioContext.destination); // Asegurar que sigue conectado a los altavoces
+        isRecording = false; // Actualizar estado de grabación
+        updateRecordingButtons();
+    };
+
+    mediaRecorder.start();
+    isRecording = true;
+    updateRecordingButtons();
+    downloadLink.style.display = 'none'; // Ocultar el enlace de descarga mientras se graba
+    downloadLink.removeAttribute('href');
+    downloadLink.removeAttribute('download');
+    downloadLink.textContent = '';
+    console.log("Grabación iniciada...");
+});
+
+stopRecordButton.addEventListener('click', () => {
+    if (mediaRecorder && mediaRecorder.state === 'recording') {
+        mediaRecorder.stop();
+        console.log("Grabación detenida.");
+    }
+});
+
+function updateRecordingButtons() {
+    recordButton.disabled = isRecording;
+    stopRecordButton.disabled = !isRecording;
+}
+
+// Inicializar el estado de los botones de grabación al cargar
+document.addEventListener('DOMContentLoaded', updateRecordingButtons);
