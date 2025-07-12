@@ -7,6 +7,9 @@ let isPlaying = false; // Para saber si un sonido está activo
 let keyOnePressed = false;
 let keyZeroPressed = false;
 
+// Variables para controlar la secuencia
+let sequenceTimeoutId = null; // Para poder cancelar la secuencia en curso
+
 // Función para inicializar el contexto de audio y los nodos
 function initAudio() {
     if (!audioContext) {
@@ -27,25 +30,25 @@ function initAudio() {
 function playSound(frequency, volumePercentage) {
     initAudio(); // Asegura que el contexto de audio esté inicializado
 
-    // Si ya está sonando algo por una tecla o botón, detenlo antes de iniciar uno nuevo
+    // Detener cualquier sonido anterior de forma suave para evitar clics
     if (isPlaying && gainNode) {
-        // Usa linearRampToValueAtTime para un desvanecimiento suave si ya está sonando
         gainNode.gain.cancelScheduledValues(audioContext.currentTime);
         gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.005); // Muy rápido
         isPlaying = false;
     }
 
     const maxBaseFrequency = 2000; // Frecuencia máxima base en Hz
-    const calculatedFrequency = maxBaseFrequency * (frequency / 100);
+    // Asegura que la frecuencia esté dentro de un rango razonable
+    const targetFrequency = Math.max(20, Math.min(maxBaseFrequency, frequency));
 
     const maxVolume = 0.5; // Un volumen máximo de 0.5 para evitar saturación
-    const calculatedVolume = maxVolume * (volumePercentage / 100);
+    const targetVolume = maxVolume * (volumePercentage / 100);
 
-    oscillator.frequency.setValueAtTime(calculatedFrequency, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(targetFrequency, audioContext.currentTime);
 
     gainNode.gain.cancelScheduledValues(audioContext.currentTime);
     gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(calculatedVolume, audioContext.currentTime + 0.01);
+    gainNode.gain.linearRampToValueAtTime(targetVolume, audioContext.currentTime + 0.01);
     isPlaying = true;
 }
 
@@ -56,6 +59,11 @@ function stopSound() {
         gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
         gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05); // Baja el volumen suavemente
         isPlaying = false;
+    }
+    // Si hay una secuencia en curso, la cancelamos
+    if (sequenceTimeoutId) {
+        clearTimeout(sequenceTimeoutId);
+        sequenceTimeoutId = null;
     }
 }
 
@@ -69,6 +77,8 @@ const volumeValueSpan = document.getElementById('volumeValue');
 const buttonOne = document.getElementById('buttonOne');
 const buttonZero = document.getElementById('buttonZero');
 const stopButton = document.getElementById('stopButton');
+const sequenceInput = document.getElementById('sequenceInput'); // Nuevo
+const playSequenceButton = document.getElementById('playSequenceButton'); // Nuevo
 
 // Variables para almacenar los valores actuales de los deslizadores
 let currentMasterFrequency = parseInt(masterFrequencyRange.value);
@@ -104,44 +114,96 @@ buttonZero.addEventListener('mouseleave', stopSound);
 // Evento para el botón de detener
 stopButton.addEventListener('click', stopSound);
 
-
 // --- NUEVA FUNCIONALIDAD: Eventos de teclado ---
 
 document.addEventListener('keydown', (event) => {
-    // Asegurarse de que el contexto de audio esté listo al interactuar con el teclado
-    initAudio();
+    initAudio(); // Asegurarse de que el contexto de audio esté listo
 
     if (event.key === '1' && !keyOnePressed) {
         const frequencyForOne = currentMasterFrequency * 1.1;
         playSound(frequencyForOne, currentVolume);
-        keyOnePressed = true; // Marca que la tecla '1' está presionada
-        buttonOne.classList.add('active'); // Opcional: añade una clase para indicar visualmente que está activo
+        keyOnePressed = true;
+        buttonOne.classList.add('active');
     } else if (event.key === '0' && !keyZeroPressed) {
         const frequencyForZero = currentMasterFrequency * 0.9;
         playSound(frequencyForZero, currentVolume);
-        keyZeroPressed = true; // Marca que la tecla '0' está presionada
-        buttonZero.classList.add('active'); // Opcional: añade una clase para indicar visualmente que está activo
+        keyZeroPressed = true;
+        buttonZero.classList.add('active');
     }
 });
 
 document.addEventListener('keyup', (event) => {
     if (event.key === '1') {
         stopSound();
-        keyOnePressed = false; // Restablece el estado de la tecla '1'
-        buttonOne.classList.remove('active'); // Opcional: quita la clase de activo
+        keyOnePressed = false;
+        buttonOne.classList.remove('active');
     } else if (event.key === '0') {
         stopSound();
-        keyZeroPressed = false; // Restablece el estado de la tecla '0'
-        buttonZero.classList.remove('active'); // Opcional: quita la clase de activo
+        keyZeroPressed = false;
+        buttonZero.classList.remove('active');
     }
 });
 
-// Opcional: añadir un poco de CSS para el estado 'active' de los botones
-// En style.css podrías añadir:
-/*
-button.active {
-    transform: translateY(0);
-    box-shadow: 0 2px 5px rgba(0, 255, 255, 0.4);
-    background-color: #00aaaa; // O un color que indique que está "presionado"
-}
-*/
+// --- NUEVA FUNCIONALIDAD: Reproducción de Secuencia desde el Input ---
+
+playSequenceButton.addEventListener('click', () => {
+    stopSound(); // Detener cualquier sonido o secuencia anterior
+    const sequenceText = sequenceInput.value.trim();
+    if (sequenceText === '') {
+        alert('Por favor, ingresa una secuencia válida (ej: 1,0,300hz,80%).');
+        return;
+    }
+
+    const segments = sequenceText.split(',').map(s => s.trim());
+    let segmentIndex = 0;
+    const delayBetweenTones = 200; // milisegundos de pausa entre tonos en secuencia
+
+    function playNextSegment() {
+        if (segmentIndex >= segments.length) {
+            stopSound(); // Terminó la secuencia
+            return;
+        }
+
+        const segment = segments[segmentIndex];
+        let targetFrequency = currentMasterFrequency * 1.0; // Frecuencia base por defecto
+        let targetVolume = currentVolume; // Volumen base por defecto
+
+        // Intentar parsear el segmento
+        const hzMatch = segment.match(/(\d+)hz/i); // Coincide con números seguidos de 'hz'
+        const percentMatch = segment.match(/(\d+)%/); // Coincide con números seguidos de '%'
+
+        if (hzMatch) {
+            // Si el segmento es una frecuencia (ej: "300hz")
+            targetFrequency = parseInt(hzMatch[1]);
+            // Si no hay volumen explícito, usa el actual del deslizador
+            targetVolume = percentMatch ? parseInt(percentMatch[1]) : currentVolume;
+        } else if (percentMatch) {
+            // Si el segmento es solo un porcentaje de volumen (ej: "80%")
+            targetVolume = parseInt(percentMatch[1]);
+            // La frecuencia se mantiene como la base actual del deslizador
+        } else if (segment === '1') {
+            // Si es '1', usa la frecuencia "para 1" y el volumen actual
+            targetFrequency = currentMasterFrequency * 1.1;
+        } else if (segment === '0') {
+            // Si es '0', usa la frecuencia "para 0" y el volumen actual
+            targetFrequency = currentMasterFrequency * 0.9;
+        } else {
+            console.warn(`Segmento desconocido en la secuencia: ${segment}. Ignorando.`);
+            // No hacer nada si el segmento no se puede interpretar
+            segmentIndex++;
+            sequenceTimeoutId = setTimeout(playNextSegment, delayBetweenTones);
+            return;
+        }
+
+        playSound(targetFrequency, targetVolume);
+
+        segmentIndex++;
+        // Programar el siguiente tono después de un pequeño retardo
+        sequenceTimeoutId = setTimeout(() => {
+            stopSound(); // Apagar el sonido actual antes de pasar al siguiente
+            playNextSegment();
+        }, delayBetweenTones);
+    }
+
+    playNextSegment(); // Iniciar la reproducción de la secuencia
+});
