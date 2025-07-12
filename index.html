@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Música Arcade 1-bit/8-bit</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Música Arcade: 1-bit & 8-bit</h1>
+        <p>Crea sonidos retro como los de los viejos arcades. Controla la frecuencia y el volumen para personalizar tus tonos de "1" y "0".</p>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="masterFrequencyRange">Frecuencia Base (%): <span id="masterFrequencyValue">50</span></label>
+                <input type="range" id="masterFrequencyRange" min="10" max="100" value="50">
+            </div>
+
+            <div class="control-group">
+                <label for="volumeRange">Volumen (%): <span id="volumeValue">50</span></label>
+                <input type="range" id="volumeRange" min="0" max="100" value="50">
+            </div>
+
+            <div class="button-group">
+                <button id="buttonOne">Reproducir '1'</button>
+                <button id="buttonZero">Reproducir '0'</button>
+                <button id="stopButton">Detener Sonido</button>
+            </div>
+        </div>
+
+        <div class="info">
+            <p><strong>Cómo funciona:</strong></p>
+            <ul>
+                <li>Usa los deslizadores de Frecuencia Base y Volumen para ajustar el sonido general.</li>
+                <li>El botón '1' reproduce un tono ligeramente más alto.</li>
+                <li>El botón '0' reproduce un tono ligeramente más bajo.</li>
+                <li>Mantén pulsados los botones '1' o '0' para escuchar el tono, suéltalos para detener.</li>
+                <li>'Detener Sonido' apaga cualquier sonido activo.</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
