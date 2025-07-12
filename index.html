@@ -66,9 +66,18 @@
                 </div>
                 <div class="button-group">
                     <button id="playMelodyButton">Reproducir Melodía</button>
+                    <button id="recordMelodyButton">Grabar Melodía</button>
+                    <button id="stopRecordMelodyButton" disabled>Detener Grabación</button>
+                    <a id="downloadMelodyLink" style="display: none;">Descargar Melodía</a>
                 </div>
             </div>
             
+            <div class="custom-notes-section">
+                <h2>Mis Notas Personalizadas</h2>
+                <p>Usa este espacio para guardar tus propias notas, ideas o cualquier texto.</p>
+                <textarea id="customNotesText" placeholder="Escribe aquí tus notas..."></textarea>
+            </div>
+
         </div>
 
         <div class="info">
@@ -89,6 +98,7 @@
                 <li>Usa "Iniciar Grabación" antes de generar el sonido y "Detener Grabación" para guardar el archivo WAV.</li>
                 <li>En "Música de Fondo (MP3)", puedes cargar un archivo de audio (max 20 segundos) para que suene de forma continua.</li>
                 <li>En "Reproductor de Melodías (Beta)", ingresa notas como <code>C4</code>, <code>D#5</code>, <code>F3</code> y su duración en milisegundos (ej: <code>C4:250</code>). También puedes usar <code>pausa:duracion</code>.</li>
+                <li>Para grabar la melodía, haz clic en "Grabar Melodía" y luego "Detener Grabación" cuando termine. Podrás descargar el archivo WAV.</li>
             </ul>
         </div>
     </div>
