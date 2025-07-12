@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de Música Arcade 1-bit/8-bit</title>
     <link rel="stylesheet" href="style.css">
-</head>
+    </head>
 <body>
     <div class="container">
         <h1>Música Arcade: 1-bit & 8-bit</h1>
@@ -25,38 +25,55 @@
             <div class="button-group">
                 <button id="buttonOne">Reproducir '1'</button>
                 <button id="buttonZero">Reproducir '0'</button>
-                <button id="stopButton">Detener Sonido</button>
+                <button id="stopButton">Detener Todo</button>
             </div>
 
             <div class="sequence-control">
                 <label for="sequenceInput">Ingresar Secuencia (ej: 1,0,3hz,56%):</label>
-                <input type="text" id="sequenceInput" placeholder="Ej: 1,0,200hz,75% para un tono; 1,0,1,0... para secuencia">
+                <input type="text" id="sequenceInput" placeholder="Ej: 1,0,200hz,75%; 1,pausa,0">
                 <button id="playSequenceButton">Reproducir Secuencia</button>
             </div>
+
             <div class="recording-controls">
                 <button id="recordButton">Iniciar Grabación</button>
                 <button id="stopRecordButton" disabled>Detener Grabación</button>
                 <a id="downloadLink" style="display: none;">Descargar Audio</a>
+            </div>
+
+            <div class="mp3-controls">
+                <h2>Música de Fondo (MP3)</h2>
+                <div class="control-group">
+                    <label for="mp3FileInput">Cargar MP3 (max 20s):</label>
+                    <input type="file" id="mp3FileInput" accept="audio/*">
+                </div>
+                <div class="control-group">
+                    <label for="mp3VolumeRange">Volumen MP3 (%): <span id="mp3VolumeValue">50</span></label>
+                    <input type="range" id="mp3VolumeRange" min="0" max="100" value="50">
+                </div>
+                <div class="button-group">
+                    <button id="playMp3Button" disabled>Reproducir MP3</button>
+                    <button id="stopMp3Button" disabled>Detener MP3</button>
+                </div>
             </div>
             </div>
 
         <div class="info">
             <p><strong>Cómo funciona:</strong></p>
             <ul>
-                <li>Usa los deslizadores de Frecuencia Base y Volumen para ajustar el sonido general.</li>
-                <li>El botón '1' reproduce un tono ligeramente más alto.</li>
-                <li>El botón '0' reproduce un tono ligeramente más bajo.</li>
-                <li>Mantén pulsados los botones '1' o '0' para escuchar el tono, suéltalos para detener.</li>
-                <li>'Detener Sonido' apaga cualquier sonido activo o secuencia.</li>
-                <li>También puedes usar las teclas <strong>'1'</strong> y <strong>'0'</strong> de tu teclado para activar los sonidos.</li>
-                <li>En "Ingresar Secuencia", puedes escribir parámetros separados por comas.</li>
+                <li>Usa los deslizadores de Frecuencia Base y Volumen para ajustar el sonido generado.</li>
+                <li>El botón '1' (y tecla '1') reproduce un tono ligeramente más alto.</li>
+                <li>El botón '0' (y tecla '0') reproduce un tono ligeramente más bajo.</li>
+                <li>Mantén pulsados los botones/teclas '1' o '0' para escuchar el tono, suéltalos para detener.</li>
+                <li>'Detener Todo' apaga cualquier sonido generado o secuencia.</li>
+                <li>En "Ingresar Secuencia", puedes escribir parámetros separados por comas para generar patrones:</li>
                 <ul>
-                    <li>Para un solo tono: <code>[tipo], [frecuencia en Hz], [volumen en %]</code> (ej: <code>1, 300hz, 80%</code>).</li>
-                    <li>Puedes omitir 'tipo' si solo quieres un tono específico (ej: <code>300hz, 80%</code>).</li>
-                    <li>Para una secuencia de '1' y '0': <code>1,0,1,0</code>.</li>
-                    <li>Puedes combinar: <code>1, 300hz, 80%, 0, 150hz, 50%</code> para tonos específicos en secuencia.</li>
+                    <li>Para un solo tono con valores específicos: <code>[frecuencia en Hz], [volumen en %]</code> (ej: <code>300, 80%</code> o <code>300hz, 80%</code>).</li>
+                    <li>Para tonos '1' o '0' con volumen del deslizador: <code>1</code>, <code>0</code>.</li>
+                    <li>Para una pausa: <code>pausa</code>, <code>silencio</code>, o <code>_</code>.</li>
+                    <li>Ejemplos de secuencias: <code>1,0,1,pausa,0,350hz,70%</code>.</li>
                 </ul>
                 <li>Usa "Iniciar Grabación" antes de generar el sonido y "Detener Grabación" para guardar el archivo WAV.</li>
+                <li>En "Música de Fondo (MP3)", puedes cargar un archivo de audio (max 20 segundos) para que suene de forma continua.</li>
             </ul>
         </div>
     </div>
