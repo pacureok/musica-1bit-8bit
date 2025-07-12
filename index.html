@@ -5,7 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de Música Arcade 1-bit/8-bit</title>
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="container">
@@ -57,22 +58,20 @@
                 </div>
             </div>
 
+            
             <div class="melody-controls">
                 <h2>Reproductor de Melodías (Beta)</h2>
-                <p>Ingresa notas separadas por comas. Cada nota durará un tiempo fijo.</p>
+                <p>Ingresa notas y su duración en milisegundos (ej: C4:250, D4:500, pausa:250).</p>
                 <div class="control-group">
-                    <label for="melodyInput">Secuencia de Notas (ej: C4, D4, E4, pausa, C4):</label>
-                    <input type="text" id="melodyInput" placeholder="Ej: C4, E4, G4, C5, pausa, G4">
-                </div>
-                 <div class="control-group">
-                    <label for="noteDuration">Duración de Nota (ms): <span id="noteDurationValue">250</span></label>
-                    <input type="range" id="noteDuration" min="50" max="1000" value="250">
+                    <label for="melodyInput">Secuencia de Notas:</label>
+                    <input type="text" id="melodyInput" placeholder="Ej: C4:250, E4:250, G4:250, C5:500, pausa:250, G4:250">
                 </div>
                 <div class="button-group">
                     <button id="playMelodyButton">Reproducir Melodía</button>
                 </div>
             </div>
-            </div>
+            
+        </div>
 
         <div class="info">
             <p><strong>Cómo funciona:</strong></p>
@@ -91,7 +90,7 @@
                 </ul>
                 <li>Usa "Iniciar Grabación" antes de generar el sonido y "Detener Grabación" para guardar el archivo WAV.</li>
                 <li>En "Música de Fondo (MP3)", puedes cargar un archivo de audio (max 20 segundos) para que suene de forma continua.</li>
-                <li>En "Reproductor de Melodías (Beta)", ingresa notas como <code>C4</code>, <code>D#5</code>, <code>F3</code>, o <code>pausa</code>. Ajusta la "Duración de Nota" para cambiar el ritmo.</li>
+                <li>En "Reproductor de Melodías (Beta)", ingresa notas como <code>C4</code>, <code>D#5</code>, <code>F3</code> y su duración en milisegundos (ej: <code>C4:250</code>). También puedes usar <code>pausa:duracion</code>.</li>
             </ul>
         </div>
     </div>
