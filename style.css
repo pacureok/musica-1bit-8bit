@@ -298,7 +298,7 @@ button.active {
     transform: none;
 }
 
-#downloadLink {
+#downloadLink, #downloadMelodyLink {
     background-color: #008CBA;
     color: white;
     text-decoration: none;
@@ -313,12 +313,12 @@ button.active {
     line-height: normal;
 }
 
-#downloadLink:hover {
+#downloadLink:hover, #downloadMelodyLink:hover {
     background-color: #007B9E;
     transform: translateY(-2px);
 }
 
-#downloadLink:active {
+#downloadLink:active, #downloadMelodyLink:active {
     background-color: #006080;
     transform: translateY(0);
     box-shadow: 0 2px 5px rgba(0, 140, 186, 0.4);
@@ -463,10 +463,69 @@ input[type="range"]::-moz-range-thumb {
     box-shadow: 0 0 8px rgba(255, 0, 255, 0.6);
 }
 
-#playMelodyButton {
+#playMelodyButton, #recordMelodyButton, #stopRecordMelodyButton {
     background-color: #8A2BE2;
     color: white;
     box-shadow: 0 5px 15px rgba(138, 43, 226, 0.4);
 }
-#playMelodyButton:hover { background-color: #7a1ee0; }
-#playMelodyButton:active { background-color: #6a10c0; }
+#playMelodyButton:hover, #recordMelodyButton:hover { background-color: #7a1ee0; }
+#playMelodyButton:active, #recordMelodyButton:active { background-color: #6a10c0; }
+
+#stopRecordMelodyButton {
+    background-color: #cc0000;
+    box-shadow: 0 5px 15px rgba(204, 0, 0, 0.4);
+}
+#stopRecordMelodyButton:hover { background-color: #990000; }
+#stopRecordMelodyButton:active { background-color: #660000; }
+
+#recordMelodyButton:disabled, #stopRecordMelodyButton:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+}
+
+
+/* Nueva Sección para Notas Personalizadas */
+.custom-notes-section {
+    margin-top: 30px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    background-color: #2e4a4a; /* Un color ligeramente diferente */
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: inset 0 0 10px rgba(0, 255, 200, 0.2);
+}
+
+.custom-notes-section h2 {
+    color: #00ffcc; /* Color vibrante para el título */
+    margin-bottom: 15px;
+    font-size: 1.5em;
+    text-shadow: 0 0 5px #00ffcc;
+}
+
+#customNotesText {
+    width: 90%;
+    height: 150px; /* Altura inicial del área de texto */
+    padding: 10px;
+    border: 2px solid #00ffcc;
+    border-radius: 5px;
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+    font-family: monospace;
+    font-size: 1em;
+    outline: none;
+    box-shadow: 0 0 5px rgba(0, 255, 200, 0.4);
+    resize: vertical; /* Permite redimensionar verticalmente */
+}
+
+#customNotesText::placeholder {
+    color: #808080;
+}
+
+#customNotesText:focus {
+    border-color: #00e0b3;
+    box-shadow: 0 0 8px rgba(0, 255, 200, 0.6);
+}
