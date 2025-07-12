@@ -31,8 +31,6 @@ const mp3VolumeValueSpan = document.getElementById('mp3VolumeValue');
 // --- NUEVOS Elementos del DOM para Melodías ---
 const melodyInput = document.getElementById('melodyInput');
 const playMelodyButton = document.getElementById('playMelodyButton');
-// const noteDurationRange = document.getElementById('noteDuration'); // Eliminado, ahora la duración es por nota
-// const noteDurationValueSpan = document.getElementById('noteDurationValue'); // Eliminado
 
 
 // Mapa de frecuencias para notas musicales (A4 = 440 Hz)
@@ -263,11 +261,11 @@ recordButton.addEventListener('click', () => {
         return;
     }
 
-    gainNode.disconnect(); // Desconecta de cualquier destino anterior
+    gainNode.disconnect();
 
     audioStreamDestination = audioContext.createMediaStreamDestination();
-    gainNode.connect(audioStreamDestination); // Conecta a la grabadora
-    gainNode.connect(audioContext.destination); // Conecta también a los altavoces para seguir escuchando
+    gainNode.connect(audioStreamDestination);
+    gainNode.connect(audioContext.destination);
 
     mediaRecorder = new MediaRecorder(audioStreamDestination.stream);
     audioChunks = [];
@@ -409,7 +407,7 @@ mp3VolumeRange.addEventListener('input', (event) => {
 });
 
 
-// --- NUEVA FUNCIONALIDAD: Reproductor de Melodías (Beta) con duración por nota ---
+// --- FUNCIONALIDAD: Reproductor de Melodías (Beta) con duración por nota ---
 
 let currentMelodySequence = [];
 let currentMelodyNoteIndex = 0;
@@ -426,11 +424,11 @@ playMelodyButton.addEventListener('click', () => {
     currentMelodySequence = melodyText.split(',').map(s => {
         const parts = s.trim().split(':');
         const note = parts[0].toUpperCase();
-        const duration = parseInt(parts[1]); // Duración en milisegundos
+        let duration = parseInt(parts[1]); // Duración en milisegundos
 
         if (isNaN(duration) || duration <= 0) {
             console.warn(`Duración inválida para ${note}: ${parts[1]}. Usando duración por defecto de 250ms.`);
-            return { note: note, duration: 250 }; // Duración por defecto si es inválida
+            duration = 250; // Duración por defecto si es inválida
         }
         return { note: note, duration: duration };
     });
@@ -480,5 +478,4 @@ document.addEventListener('DOMContentLoaded', () => {
     playMp3Button.disabled = true;
     stopMp3Button.disabled = true;
     mp3VolumeValueSpan.textContent = mp3VolumeRange.value;
-    // noteDurationValueSpan.textContent = noteDurationRange.value; // Ya no es necesario
 });
