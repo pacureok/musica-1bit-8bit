@@ -33,6 +33,11 @@
                 <input type="text" id="sequenceInput" placeholder="Ej: 1,0,200hz,75% para un tono; 1,0,1,0... para secuencia">
                 <button id="playSequenceButton">Reproducir Secuencia</button>
             </div>
+            <div class="recording-controls">
+                <button id="recordButton">Iniciar Grabación</button>
+                <button id="stopRecordButton" disabled>Detener Grabación</button>
+                <a id="downloadLink" style="display: none;">Descargar Audio</a>
+            </div>
             </div>
 
         <div class="info">
@@ -42,7 +47,7 @@
                 <li>El botón '1' reproduce un tono ligeramente más alto.</li>
                 <li>El botón '0' reproduce un tono ligeramente más bajo.</li>
                 <li>Mantén pulsados los botones '1' o '0' para escuchar el tono, suéltalos para detener.</li>
-                <li>'Detener Sonido' apaga cualquier sonido activo.</li>
+                <li>'Detener Sonido' apaga cualquier sonido activo o secuencia.</li>
                 <li>También puedes usar las teclas <strong>'1'</strong> y <strong>'0'</strong> de tu teclado para activar los sonidos.</li>
                 <li>En "Ingresar Secuencia", puedes escribir parámetros separados por comas.</li>
                 <ul>
@@ -51,6 +56,7 @@
                     <li>Para una secuencia de '1' y '0': <code>1,0,1,0</code>.</li>
                     <li>Puedes combinar: <code>1, 300hz, 80%, 0, 150hz, 50%</code> para tonos específicos en secuencia.</li>
                 </ul>
+                <li>Usa "Iniciar Grabación" antes de generar el sonido y "Detener Grabación" para guardar el archivo WAV.</li>
             </ul>
         </div>
     </div>
