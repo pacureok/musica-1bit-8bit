@@ -1,13 +1,11 @@
 let audioContext;
-let oscillator;
-let gainNode;
-let isPlaying = false; // Para saber si un sonido generado está activo
+let masterGainNode; // Un nodo de ganancia principal para controlar todo el volumen general
 
 let keyOnePressed = false;
 let keyZeroPressed = false;
 
-let sequenceTimeoutId = null; // Para la secuencia de 1,0,hz,%
-let melodyTimeoutId = null; // Para la secuencia de notas musicales
+let sequenceTimeoutId = null;
+let melodyTimeoutId = null;
 
 // Variables para la grabación de audio (general)
 let mediaRecorder;
@@ -31,12 +29,27 @@ const mp3VolumeValueSpan = document.getElementById('mp3VolumeValue');
 // --- Elementos del DOM para Melodías ---
 const melodyInput = document.getElementById('melodyInput');
 const playMelodyButton = document.getElementById('playMelodyButton');
-const recordMelodyButton = document.getElementById('recordMelodyButton'); // Nuevo botón
-const stopRecordMelodyButton = document.getElementById('stopRecordMelodyButton'); // Nuevo botón
-const downloadMelodyLink = document.getElementById('downloadMelodyLink'); // Nuevo enlace
+const recordMelodyButton = document.getElementById('recordMelodyButton');
+const stopRecordMelodyButton = document.getElementById('stopRecordMelodyButton');
+const downloadMelodyLink = document.getElementById('downloadMelodyLink');
 
 // --- Elementos del DOM para Notas Personalizadas ---
-const customNotesText = document.getElementById('customNotesText'); // Nuevo elemento
+const customNotesText = document.getElementById('customNotesText');
+
+// --- Elementos del DOM para 32-bit ---
+const waveTypeSelect = document.getElementById('waveType');
+const chordNotesInput = document.getElementById('chordNotes');
+const chordDurationRange = document.getElementById('chordDuration');
+const chordDurationValueSpan = document.getElementById('chordDurationValue');
+const delayAmountRange = document.getElementById('delayAmount');
+const delayAmountValueSpan = document.getElementById('delayAmountValue');
+const play32BitButton = document.getElementById('play32BitButton');
+const stop32BitButton = document.getElementById('stop32BitButton');
+
+let current32BitOscillators = []; // Para manejar múltiples osciladores en 32-bit
+let currentDelayNode = null;
+let currentDelayFeedback = 0.5; // Valor por defecto para el feedback del delay
+let currentDelayTime = 0.5; // Valor por defecto para el tiempo del delay
 
 // Mapa de frecuencias para notas musicales (A4 = 440 Hz)
 const noteFrequencies = {
@@ -47,58 +60,75 @@ const noteFrequencies = {
 };
 
 
-// Función para inicializar el contexto de audio y los nodos
+// Función para inicializar el contexto de audio y los nodos globales
 function initAudio() {
     if (!audioContext) {
         audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        oscillator = audioContext.createOscillator();
-        gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination); // Conecta a los altavoces por defecto
-
-        oscillator.type = 'square';
-        oscillator.start(0);
-        gainNode.gain.setValueAtTime(0, audioContext.currentTime);
+        masterGainNode = audioContext.createGain(); // Nodo de ganancia maestro
+        masterGainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Volumen inicial global
+        masterGainNode.connect(audioContext.destination);
 
         // Inicializar nodos para el audio de fondo (MP3)
         backgroundGainNode = audioContext.createGain();
         backgroundGainNode.gain.setValueAtTime(0.5, audioContext.currentTime); // Volumen inicial para MP3
-        backgroundGainNode.connect(audioContext.destination);
+        backgroundGainNode.connect(masterGainNode); // Conectar al masterGainNode
     }
 }
 
-// Función para reproducir un sonido con una frecuencia y volumen específicos
+// --- Sección de Sonidos 1-bit/8-bit y Melodías (comparten un oscilador y gainNode) ---
+let current8BitOscillator = null;
+let current8BitGainNode = null;
+
+function create8BitSoundNodes() {
+    if (current8BitOscillator) {
+        current8BitOscillator.stop();
+        current8BitOscillator.disconnect();
+    }
+    if (current8BitGainNode) {
+        current8BitGainNode.disconnect();
+    }
+
+    current8BitOscillator = audioContext.createOscillator();
+    current8BitGainNode = audioContext.createGain();
+
+    current8BitOscillator.connect(current8BitGainNode);
+    current8BitGainNode.connect(masterGainNode); // Conectar al masterGainNode
+    current8BitOscillator.type = 'square'; // Siempre cuadrada para 8-bit
+    current8BitOscillator.start(0);
+    current8BitGainNode.gain.setValueAtTime(0, audioContext.currentTime);
+}
+
+
+// Función para reproducir un sonido con una frecuencia y volumen específicos (para 1-bit/8-bit y melodías)
 function playSound(frequency, volumePercentage) {
     initAudio();
+    if (!current8BitOscillator || !current8BitGainNode) {
+        create8BitSoundNodes();
+    }
 
     // Detener cualquier sonido generado anteriormente de forma suave
-    if (isPlaying && gainNode) {
-        gainNode.gain.cancelScheduledValues(audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.005);
-        isPlaying = false;
+    if (current8BitGainNode) {
+        current8BitGainNode.gain.cancelScheduledValues(audioContext.currentTime);
+        current8BitGainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.005);
     }
 
     const maxBaseFrequency = 2000;
     const targetFrequency = Math.max(20, Math.min(maxBaseFrequency, frequency));
 
-    const maxVolume = 0.5;
+    const maxVolume = 0.5; // Volumen máximo para estos sonidos
     const targetVolume = maxVolume * (volumePercentage / 100);
 
-    oscillator.frequency.setValueAtTime(targetFrequency, audioContext.currentTime);
-
-    gainNode.gain.cancelScheduledValues(audioContext.currentTime);
-    gainNode.gain.setValueAtTime(gainNode.gain.value, audioContext.currentTime);
-    gainNode.gain.linearRampToValueAtTime(targetVolume, audioContext.currentTime + 0.01);
-    isPlaying = true;
+    current8BitOscillator.frequency.setValueAtTime(targetFrequency, audioContext.currentTime);
+    current8BitGainNode.gain.cancelScheduledValues(audioContext.currentTime);
+    current8BitGainNode.gain.setValueAtTime(current8BitGainNode.gain.value, audioContext.currentTime);
+    current8BitGainNode.gain.linearRampToValueAtTime(targetVolume, audioContext.currentTime + 0.01);
 }
 
 // Función para detener el sonido generado (1-bit/8-bit y melodías)
 function stopGeneratedSound() {
-    if (isPlaying && gainNode) {
-        gainNode.gain.cancelScheduledValues(audioContext.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05);
-        isPlaying = false;
+    if (current8BitGainNode) {
+        current8BitGainNode.gain.cancelScheduledValues(audioContext.currentTime);
+        current8BitGainNode.gain.linearRampToValueAtTime(0, audioContext.currentTime + 0.05);
     }
     if (sequenceTimeoutId) {
         clearTimeout(sequenceTimeoutId);
@@ -110,10 +140,11 @@ function stopGeneratedSound() {
     }
 }
 
-// Función para detener TODO el sonido (generado y MP3)
+// Función para detener TODO el sonido (generado, MP3 y 32-bit)
 function stopAllSound() {
     stopGeneratedSound();
     stopMp3();
+    stop32BitSound(); // Detener sonidos de 32-bit
     if (isRecording) { // Asegurarse de detener la grabación si está activa
         mediaRecorder.stop();
     }
@@ -146,6 +177,10 @@ masterFrequencyRange.addEventListener('input', (event) => {
 volumeRange.addEventListener('input', (event) => {
     currentVolume = parseInt(event.target.value);
     volumeValueSpan.textContent = currentVolume;
+    // Ajustar el volumen general del masterGainNode
+    if (masterGainNode) {
+        masterGainNode.gain.setValueAtTime(currentVolume / 100 * 0.5, audioContext.currentTime);
+    }
 });
 
 buttonOne.addEventListener('mousedown', () => {
@@ -166,7 +201,7 @@ stopButton.addEventListener('click', stopAllSound);
 
 
 document.addEventListener('keydown', (event) => {
-    initAudio();
+    initAudio(); // Asegurar que el contexto de audio esté activo
 
     if (event.key === '1' && !keyOnePressed) {
         const frequencyForOne = currentMasterFrequency * 1.1;
@@ -269,12 +304,9 @@ recordButton.addEventListener('click', () => {
         return;
     }
     
-    // Desconectar el gainNode del destino principal temporalmente para reconectar a la grabadora
-    gainNode.disconnect(audioContext.destination);
-
+    // Conectar el masterGainNode a la grabadora
     audioStreamDestination = audioContext.createMediaStreamDestination();
-    gainNode.connect(audioStreamDestination); // Conectar la salida del sonido a la grabadora
-    gainNode.connect(audioContext.destination); // Reconectar al destino principal para seguir escuchando
+    masterGainNode.connect(audioStreamDestination);
 
     mediaRecorder = new MediaRecorder(audioStreamDestination.stream);
     audioChunks = [];
@@ -292,9 +324,8 @@ recordButton.addEventListener('click', () => {
         downloadLink.style.display = 'block';
         downloadLink.textContent = 'Descargar Audio';
 
-        // Desconectar la grabadora y restaurar la conexión normal del gainNode
-        gainNode.disconnect(audioStreamDestination);
-        gainNode.connect(audioContext.destination);
+        // Desconectar la grabadora y restaurar la conexión normal del masterGainNode
+        masterGainNode.disconnect(audioStreamDestination);
        
         isRecording = false;
         updateRecordingButtons();
@@ -374,9 +405,7 @@ playMp3Button.addEventListener('click', () => {
         backgroundAudio.buffer = currentBuffer;
         backgroundAudio.loop = true;
         backgroundAudio.connect(backgroundGainNode);
-        backgroundGainNode.connect(audioContext.destination);
-
-
+        // backgroundGainNode ya está conectado a masterGainNode
         backgroundAudio.start(0);
         backgroundIsPlaying = true;
         playMp3Button.disabled = true;
@@ -506,10 +535,8 @@ recordMelodyButton.addEventListener('click', () => {
     }
 
     // Preparar MediaRecorder
-    gainNode.disconnect(audioContext.destination); // Desconectar temporalmente
     audioStreamDestination = audioContext.createMediaStreamDestination();
-    gainNode.connect(audioStreamDestination);
-    gainNode.connect(audioContext.destination); // Reconectar para escuchar mientras grabas
+    masterGainNode.connect(audioStreamDestination); // Conectar el masterGainNode a la grabadora
 
     mediaRecorder = new MediaRecorder(audioStreamDestination.stream);
     audioChunks = [];
@@ -528,8 +555,7 @@ recordMelodyButton.addEventListener('click', () => {
         downloadMelodyLink.textContent = 'Descargar Melodía';
 
         // Restaurar conexiones de audio
-        gainNode.disconnect(audioStreamDestination);
-        gainNode.connect(audioContext.destination);
+        masterGainNode.disconnect(audioStreamDestination);
         
         isRecording = false;
         updateMelodyRecordingButtons();
@@ -589,4 +615,118 @@ document.addEventListener('DOMContentLoaded', () => {
     playMp3Button.disabled = true;
     stopMp3Button.disabled = true;
     mp3VolumeValueSpan.textContent = mp3VolumeRange.value;
+    chordDurationValueSpan.textContent = chordDurationRange.value; // Para la nueva sección 32-bit
+    delayAmountValueSpan.textContent = delayAmountRange.value; // Para la nueva sección 32-bit
+});
+
+
+// --- Lógica para el Generador de Sonido 32-bit (Experimental) ---
+
+play32BitButton.addEventListener('click', () => {
+    initAudio();
+    stopAllSound(); // Detener todo antes de iniciar el sonido 32-bit
+
+    const waveType = waveTypeSelect.value;
+    const notesText = chordNotesInput.value.trim();
+    const duration = parseInt(chordDurationRange.value);
+    const delayPercentage = parseInt(delayAmountRange.value);
+
+    if (notesText === '') {
+        alert('Por favor, ingresa al menos una nota para el acorde (ej: C4).');
+        return;
+    }
+
+    const notes = notesText.split(',').map(note => note.trim().toUpperCase());
+    const frequencies = notes.map(note => noteFrequencies[note]).filter(freq => freq !== undefined);
+
+    if (frequencies.length === 0) {
+        alert('Ninguna de las notas ingresadas es válida. Por favor, usa notas como C4, E5, etc.');
+        return;
+    }
+
+    // Detener y limpiar osciladores anteriores de 32-bit
+    stop32BitSound();
+
+    // Crear un GainNode para controlar el volumen de este acorde
+    const chordGain = audioContext.createGain();
+    chordGain.gain.setValueAtTime(currentVolume / 100 * 0.5, audioContext.currentTime); // Volumen basado en el general
+
+    // Configurar Delay (Eco)
+    if (delayPercentage > 0) {
+        currentDelayNode = audioContext.createDelay(1.0); // Max delay time
+        currentDelayNode.delayTime.setValueAtTime(currentDelayTime, audioContext.currentTime); // default 0.5s
+
+        const delayFeedbackGain = audioContext.createGain();
+        delayFeedbackGain.gain.setValueAtTime(currentDelayFeedback * (delayPercentage / 100), audioContext.currentTime);
+
+        chordGain.connect(currentDelayNode); // Conectar la señal al delay
+        currentDelayNode.connect(delayFeedbackGain); // Conectar el delay a su feedback
+        delayFeedbackGain.connect(currentDelayNode); // Conectar el feedback de vuelta al delay (para eco)
+
+        currentDelayNode.connect(masterGainNode); // Conectar la salida del delay al master
+    } else {
+        currentDelayNode = null; // No hay delay
+    }
+
+    // Crear y conectar los osciladores para cada nota del acorde
+    frequencies.forEach(freq => {
+        const osc = audioContext.createOscillator();
+        osc.type = waveType;
+        osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+        osc.start(audioContext.currentTime);
+        
+        osc.connect(chordGain); // Conectar cada oscilador al gain del acorde
+        current32BitOscillators.push(osc);
+    });
+
+    chordGain.connect(masterGainNode); // Conectar el gain del acorde al master, si no hay delay o para la señal directa
+
+    // Detener los osciladores después de la duración especificada
+    current32BitOscillators.forEach(osc => {
+        osc.stop(audioContext.currentTime + (duration / 1000));
+    });
+
+    // Desconectar los nodos de ganancia después de que el sonido termine (para evitar clics)
+    chordGain.gain.setValueAtTime(chordGain.gain.value, audioContext.currentTime);
+    chordGain.gain.linearRampToValueAtTime(0, audioContext.currentTime + (duration / 1000) + 0.05); // Fade out
+    setTimeout(() => {
+        if (chordGain) chordGain.disconnect();
+        if (currentDelayNode) currentDelayNode.disconnect();
+        if (delayFeedbackGain) delayFeedbackGain.disconnect(); // Desconectar también el gain de feedback
+        current32BitOscillators = []; // Limpiar la lista
+    }, duration + 100); // Un poco más de tiempo para el fade out
+});
+
+
+stop32BitButton.addEventListener('click', stop32BitSound);
+
+function stop32BitSound() {
+    current32BitOscillators.forEach(osc => {
+        try {
+            osc.stop(0); // Detener inmediatamente
+            osc.disconnect();
+        } catch (e) {
+            // Ya parado, no hacer nada
+        }
+    });
+    current32BitOscillators = [];
+
+    if (currentDelayNode) {
+        currentDelayNode.disconnect();
+        currentDelayNode = null;
+    }
+    // Asegurarse de que no haya otros nodos "colgados" del flujo 32-bit
+    // Esto es un poco más complejo si la cadena es muy larga.
+    // Para esta implementación simple, desconectar el currentDelayNode debería ser suficiente.
+}
+
+chordDurationRange.addEventListener('input', (event) => {
+    chordDurationValueSpan.textContent = event.target.value;
+});
+
+delayAmountRange.addEventListener('input', (event) => {
+    delayAmountValueSpan.textContent = event.target.value;
+    // Actualizar el valor de feedback del delay si ya existe un nodo de delay
+    // No afecta los sonidos ya reproduciéndose con un delay, solo los nuevos.
+    currentDelayFeedback = parseInt(event.target.value) / 100;
 });
